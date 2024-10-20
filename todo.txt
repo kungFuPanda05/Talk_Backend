@@ -1,0 +1,5 @@
+To make google O-auth
+To set environment variables
+To use JOI
+configure the custom new RequestError
+The multer image uplad is not working
