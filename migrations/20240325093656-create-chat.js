@@ -5,10 +5,10 @@ module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.createTable('Chats', {
       id: {
-        type: Sequelize.UUID,
+        type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true,
-        defaultValue: Sequelize.UUIDV4()
+        autoIncrement: true
       },
       chatName: {
         type: Sequelize.STRING,
@@ -20,7 +20,7 @@ module.exports = {
         defaultValue: false
       },
       groupAdmin: {
-        type: Sequelize.UUID,
+        type: Sequelize.INTEGER,
         allowNull: true,
         references:{
           model: 'Users',
@@ -35,6 +35,9 @@ module.exports = {
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false
+      },
+      deletedAt: {
+        type: Sequelize.DATE
       }
     })
   },

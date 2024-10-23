@@ -5,11 +5,12 @@ import bcypt from 'bcrypt';
 
 module.exports = (sequelize, DataTypes)=>{
     const ReadMessUser = sequelize.define('ReadMessUser', {
-        messId: DataTypes.UUID,
-        userId: DataTypes.UUID,
-        readAt: DataTypes.UUID
+        messId: DataTypes.INTEGER,
+        userId: DataTypes.INTEGER,
+        readAt: DataTypes.INTEGER
     },{
         timestamps: true,
+        paranoid: true
     })
     
     ReadMessUser.associate = function (models){

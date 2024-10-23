@@ -6,13 +6,11 @@ import bcypt from 'bcrypt';
 module.exports = (sequelize, DataTypes)=>{
     const Message = sequelize.define('Message', {
         content: DataTypes.STRING,
-        sentBy: DataTypes.UUID,
-        chatId: DataTypes.UUID
+        sentBy: DataTypes.INTEGER,
+        chatId: DataTypes.INTEGER
     },{
-        timestamps: true
-    })
-    Message.beforeCreate((message, options)=>{
-        if(!message.id) message.id = crypto.randomUUID();
+        timestamps: true,
+        paranoid: true
     })
 
     Message.associate = function (models){

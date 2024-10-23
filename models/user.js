@@ -1,7 +1,7 @@
 'use strict'
 
 import crypto from 'crypto'
-import bcypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 
 module.exports = (sequelize, DataTypes)=>{
     const User = sequelize.define('User', {
@@ -10,14 +10,14 @@ module.exports = (sequelize, DataTypes)=>{
         password: DataTypes.STRING,
         isAdmin: DataTypes.BOOLEAN,
         pic: DataTypes.STRING,
-        gender: DataTypes.BOOLEAN
+        gender: DataTypes.ENUM('M', 'F')
     },{
         timestamps: true,
+        paranoid: true
     })
     User.beforeCreate((user, options)=>{
-        if(!user.id) user.id = crypto.randomUUID();
         if(user.password){
-            let newHashPassword = bcypt.hashSync(user.password, 10);
+            let newHashPassword = bcrypt.hashSync(user.password, 10);
             user.password = newHashPassword;
         }
     })

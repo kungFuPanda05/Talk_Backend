@@ -5,16 +5,16 @@ module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.createTable('Messages', {
       id: {
-        type: Sequelize.UUID,
+        type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true,
-        defaultValue: Sequelize.UUIDV4()
+        autoIncrement: true
       },
       content: {
         type: Sequelize.STRING,
       },
       sentBy: {
-        type: Sequelize.UUID,
+        type: Sequelize.INTEGER,
         allowNull: false,
         references:{
           model: 'Users',
@@ -23,7 +23,7 @@ module.exports = {
           onUpdate: 'CASCADE'
       },
       chatId: {
-        type: Sequelize.UUID,
+        type: Sequelize.INTEGER,
         allowNull: false,
         references:{
           model: 'Chats',
@@ -38,6 +38,9 @@ module.exports = {
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false
+      },
+      deletedAt: {
+        type: Sequelize.DATE
       }
     })
   },

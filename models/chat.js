@@ -6,14 +6,12 @@ module.exports = (sequelize, DataTypes)=>{
     const Chat = sequelize.define('Chat', {
         chatName: DataTypes.STRING,
         isGroupChat: DataTypes.BOOLEAN,
-        groupAdmin: DataTypes.UUID
+        groupAdmin: DataTypes.INTEGER
     },{
         timestamps: true,
+        paranoid: true
     })
 
-    Chat.beforeCreate((chat, options)=>{
-        if(!chat.id) chat.id = crypto.randomUUID();
-    })
     
     Chat.associate = function (models){
         models.Chat.hasMany(models.ChatUser, {foreignKey: 'chatId'});
