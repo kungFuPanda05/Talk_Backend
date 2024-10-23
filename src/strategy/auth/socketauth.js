@@ -1,6 +1,10 @@
 import passport from 'passport'
 
-const jwtStrategy = async (req , res , next) => {
+const socketStrategy = async (socket, next) => {
+    console.log("The socket is: ", socket);
+    const token = socket.handshake.headers.authorization?.split(' ')[1];
+    if(!token) next(new RequestError("Invalid User", 401));
+
     passport.authenticate('jwt' , {session : false} , (err , user) => {
         if (err && err == "user" || !user) {
             return next(new RequestError("UnAuthorized User", 401));
@@ -8,9 +12,9 @@ const jwtStrategy = async (req , res , next) => {
         if (err) {
             return next(new RequestError(err));
         }
-        req.user = user;
+        socket.user = user;
         next();
-    })(req , res , next);
+    })(socket.handshake , null , next);
 }
 
-export default jwtStrategy;
+export default socketStrategy;

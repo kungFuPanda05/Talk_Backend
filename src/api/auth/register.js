@@ -10,7 +10,7 @@ let controller = async (req, res, next)=>{
         let {name, gender, email, password} = req.body;
         // console.log("req.body: ", req.body);
         let user = await db.User.findOne({where: {email}});
-        if(user) throw new Error("The user already exists, try login");
+        if(user) throw new RequestError("The user already exists, try login", 409);
         const pic = req.file? req.file.path : null;
         console.log("PIC: ", pic);
 
@@ -21,7 +21,7 @@ let controller = async (req, res, next)=>{
         console.log("pic: ", pic);
 
         let createdUser = await db.User.create({name, gender, email, password, pic})
-        if(!createdUser) throw new Error("The User has not created");
+        if(!createdUser) throw new RequestError("The User has not created");
 
         return res.status(200).json({
             success: true,
