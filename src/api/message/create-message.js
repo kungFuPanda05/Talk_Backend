@@ -14,10 +14,18 @@ let controller = async (req, res, next)=>{
         const message = await db.Message.create({
             chatId, content, sentBy
         })
+        await db.Chat.update({
+            lastMessageId: message.id,
+            newMessageCount: db.Sequelize.literal('newMessageCount + 1')
+        }, {
+            where: {
+                id: chatId
+            }
+        });        
         
         res.status(201).json({
             success: true,
-            messages: 'chat created successfully',
+            messages: 'Message created successfully',
             result: message
         });
     }catch(error){

@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes)=>{
 
     Message.associate = function (models){
         models.Message.hasMany(models.ReadMessUser, {foreignKey: 'messId'});
+
         models.Message.belongsTo(models.User, {foreignKey: 'sentBy'});
         models.Message.belongsTo(models.Chat, {foreignKey: 'chatId'});
     }

@@ -1,25 +1,13 @@
-//It gives me messages corresponding to a chat
-
 import express from 'express';
 import jwtStrategy from '../../strategy/auth/jwtauth';
 import db from '../../../models';
 
-
-
 let controller = async (req, res, next)=>{
-    const {chatId} = req.body;
     try{
-        const messages = await db.Message.findAll({
-            where: {chatId},
-            include: [
-                db.User
-            ]
-        });
-
         res.status(200).json({
-            result: messages,
+            result: req.user.id,
             success: true,
-            messages: 'Messages list retrieved successfully'
+            messages: 'USer Id fetched successfully'
         });
     }catch(error){
         next(error);

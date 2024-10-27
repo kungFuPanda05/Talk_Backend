@@ -1,9 +1,17 @@
 import express from 'express';
 import db from '../../../models'
 import { logoUpload } from '../../middleware/multer-config';
+import { validateBody } from '../../middleware/validator';
+import Joi from 'joi';
 const apiRouter = express.Router();
 // logoUpload.single('logo')
 
+const validator = Joi.object().keys({
+    name: Joi.string().required(),                      
+    gender: Joi.string().valid('M', 'F').required(),      
+    email: Joi.string().email().required(),              
+    password: Joi.string().min(8).required()              
+});
 
 let controller = async (req, res, next)=>{
     try{
@@ -32,6 +40,6 @@ let controller = async (req, res, next)=>{
     }
 }
 
-apiRouter.route('/').post(logoUpload.single('logo'), controller);
+apiRouter.route('/').post(logoUpload.single('logo'), validateBody(validator), controller); //multer should be before validateBody because it populates the req.body and if it is written after validatebody then the validator won't have any data in req.body and it will throw the error
 
 export default apiRouter;

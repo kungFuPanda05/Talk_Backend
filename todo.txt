@@ -1,5 +1,4 @@
 To make google O-auth
-To set environment variables
-To use JOI
-configure the custom new RequestError
-The multer image uplad is not working
+The multer image upload is not working
+change the gender flow from boolean to enum in register.js frontend
+when i am giving the invalid route then i am not getting the invalid route error and neither the request is consoling on the backend

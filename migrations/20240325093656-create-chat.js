@@ -28,6 +28,24 @@ module.exports = {
         },
           onUpdate: 'CASCADE'
       },
+      lastMessageId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references:{
+          model: 'Messages',
+          key: 'id',
+        },
+          onUpdate: 'CASCADE'
+      },
+      avatar: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      newMessageCount: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 0
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false

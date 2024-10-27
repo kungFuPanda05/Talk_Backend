@@ -26,6 +26,8 @@ module.exports = (sequelize, DataTypes)=>{
         models.User.hasMany(models.Chat, {foreignKey: 'groupAdmin'});
         models.User.hasMany(models.ReadMessUser, {foreignKey: 'userId'});
         models.User.hasMany(models.Message, {foreignKey: 'sentBy'});
+        models.User.hasMany(models.Friend_Request, { as: 'SentRequests', foreignKey: 'from' });
+        models.User.hasMany(models.Friend_Request, { as: 'ReceivedRequests', foreignKey: 'to' });
     }
     return User;
 }

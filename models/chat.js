@@ -6,7 +6,10 @@ module.exports = (sequelize, DataTypes)=>{
     const Chat = sequelize.define('Chat', {
         chatName: DataTypes.STRING,
         isGroupChat: DataTypes.BOOLEAN,
-        groupAdmin: DataTypes.INTEGER
+        groupAdmin: DataTypes.INTEGER,
+        lastMessageId: DataTypes.INTEGER,
+        avatar: DataTypes.STRING,
+        newMessageCount: DataTypes.INTEGER
     },{
         timestamps: true,
         paranoid: true
@@ -15,8 +18,10 @@ module.exports = (sequelize, DataTypes)=>{
     
     Chat.associate = function (models){
         models.Chat.hasMany(models.ChatUser, {foreignKey: 'chatId'});
-        models.Chat.hasMany(models.Message, {foreignKey: 'chatId'});
+        models.Chat.hasMany(models.Message, {as: "Messages", foreignKey: 'chatId'});
+
         models.Chat.belongsTo(models.User, {foreignKey: 'groupAdmin'});
+        models.Chat.belongsTo(models.Message, {as: "Last_Message", foreignKey: 'lastMessageId'})
     }
     return Chat;
 }

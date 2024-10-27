@@ -6,7 +6,9 @@ import './passport';
 import db from '../models';
 import randomConnect from './randomConnLogic';
 import socketStrategy from './strategy/auth/socketauth';
+import expressSanitizer from 'express-sanitizer'
 import './errors'
+import { sanitize } from './middleware/sanitizer';
 const app = express();
 
 app.use(cors({
@@ -18,8 +20,10 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 app.use(passport.initialize());
+app.use(expressSanitizer());
 
-app.use('/api', restRouter);
+
+app.use('/api', sanitize(), restRouter);
 app.get('/', (req, res)=>{
     res.send("This is the home page");
 })
