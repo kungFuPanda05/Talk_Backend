@@ -5,7 +5,7 @@ import path from 'path';
 // Filter to check if the uploaded file is an image
 const imageFilter = (req, file, cb) => {
   if (!file.originalname.match(/\.(jpg|jpeg|png)$/i)) {
-    return cb(new Error('Only image files are allowed!'), false);
+    return cb(new RequestError('Only image files are allowed!', 409), false);
   }
   cb(null, true);
 };

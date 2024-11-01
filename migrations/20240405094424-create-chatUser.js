@@ -28,6 +28,11 @@ module.exports = {
         },
           onUpdate: 'CASCADE'
       },
+      newMessageCount: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false

@@ -2,3 +2,4 @@ To make google O-auth
 The multer image upload is not working
 change the gender flow from boolean to enum in register.js frontend
 when i am giving the invalid route then i am not getting the invalid route error and neither the request is consoling on the backend
+When the last message sent is very big in length then deal with that

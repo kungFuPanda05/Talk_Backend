@@ -6,7 +6,8 @@ import bcypt from 'bcrypt';
 module.exports = (sequelize, DataTypes)=>{
     const ChatUser = sequelize.define('ChatUser', {
         chatId: DataTypes.INTEGER,
-        userId: DataTypes.INTEGER
+        userId: DataTypes.INTEGER,
+        newMessageCount: DataTypes.INTEGER
         
     },{
         timestamps: true,

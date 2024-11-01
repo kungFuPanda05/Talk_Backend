@@ -13,11 +13,12 @@ let controller = async (req, res, next)=>{
             attributes: ['id', 'content', ['sentBy', 'userId']],
             where: { chatId }
         });
-        await db.Chat.update({
+        await db.ChatUser.update({
             newMessageCount: 0
         }, {
             where: {
-                id: chatId
+                chatId,
+                userId: req.user.id
             }
         })
         

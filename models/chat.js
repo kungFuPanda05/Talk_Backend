@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes)=>{
 
         models.Chat.belongsTo(models.User, {foreignKey: 'groupAdmin'});
         models.Chat.belongsTo(models.Message, {as: "Last_Message", foreignKey: 'lastMessageId'})
+        models.Chat.belongsToMany(models.User, { through: models.ChatUser, foreignKey: "chatId" });
     }
     return Chat;
 }

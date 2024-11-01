@@ -9,6 +9,9 @@ import socketStrategy from './strategy/auth/socketauth';
 import expressSanitizer from 'express-sanitizer'
 import './errors'
 import { sanitize } from './middleware/sanitizer';
+import dotenv from 'dotenv';
+
+dotenv.config();
 const app = express();
 
 app.use(cors({

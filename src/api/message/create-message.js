@@ -4,6 +4,7 @@
 import express from 'express';
 import jwtStrategy from '../../strategy/auth/jwtauth';
 import db from '../../../models';
+import { Op } from 'sequelize';
 
 
 let controller = async (req, res, next)=>{
@@ -15,13 +16,22 @@ let controller = async (req, res, next)=>{
             chatId, content, sentBy
         })
         await db.Chat.update({
-            lastMessageId: message.id,
-            newMessageCount: db.Sequelize.literal('newMessageCount + 1')
+            lastMessageId: message.id
         }, {
             where: {
                 id: chatId
             }
-        });        
+        });    
+        await db.ChatUser.update({
+            newMessageCount: db.Sequelize.literal('newMessageCount + 1'),
+        }, {
+            where: {
+                chatId,
+                userId: {
+                    [Op.ne] : req.user.id
+                }
+            }
+        })    
         
         res.status(201).json({
             success: true,
