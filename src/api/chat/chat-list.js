@@ -61,7 +61,6 @@ let controller = async (req, res, next)=>{
                 delete chat.ChatUsers;
                 return chat;
             }));
-
             chats = chats
             .filter((c) => match(c.chatName, search))  
             .slice(offset, offset + limit);     
