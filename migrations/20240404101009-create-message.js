@@ -11,7 +11,7 @@ module.exports = {
         autoIncrement: true
       },
       content: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
       },
       sentBy: {
         type: Sequelize.INTEGER,
@@ -20,7 +20,8 @@ module.exports = {
           model: 'Users',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
       },
       chatId: {
         type: Sequelize.INTEGER,
@@ -29,7 +30,8 @@ module.exports = {
           model: 'Chats',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
       },
       createdAt: {
         type: Sequelize.DATE,

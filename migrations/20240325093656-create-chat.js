@@ -2,65 +2,52 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Chats', {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true,
-        autoIncrement: true
+        autoIncrement: true,
       },
       chatName: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
       },
       isGroupChat: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
-        defaultValue: false
+        defaultValue: false,
       },
       groupAdmin: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references:{
+        references: {
           model: 'Users',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
-      },
-      lastMessageId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references:{
-          model: 'Messages',
-          key: 'id',
-        },
-          onUpdate: 'CASCADE'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
       },
       avatar: {
         type: Sequelize.STRING,
-        allowNull: true
-      },
-      newMessageCount: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 0
+        allowNull: true,
       },
       createdAt: {
         type: Sequelize.DATE,
-        allowNull: false
+        allowNull: false,
       },
       updatedAt: {
         type: Sequelize.DATE,
-        allowNull: false
+        allowNull: false,
       },
       deletedAt: {
-        type: Sequelize.DATE
-      }
-    })
+        type: Sequelize.DATE,
+      },
+    });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Chats');
-  }
+  },
 };

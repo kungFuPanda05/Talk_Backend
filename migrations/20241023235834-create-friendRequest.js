@@ -31,9 +31,9 @@ module.exports = {
                 onDelete: "CASCADE"
             },
             status: {
-                type: Sequelize.ENUM('Accepted', 'Pending', 'Rejected'),
+                type: Sequelize.ENUM('accepted', 'pending', 'rejected'),
                 allowNull: true,
-                defaultValue: 'Pending', 
+                defaultValue: 'pending', 
             },
             createdAt: {
                 type: Sequelize.DATE,

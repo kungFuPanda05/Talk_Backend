@@ -14,8 +14,8 @@ module.exports = (sequelize, DataTypes)=>{
     })
 
     Friend_Request.associate = function (models){
-        models.Friend_Request.belongsTo(models.User, { as: 'fromUser', foreignKey: 'from' });
-        models.Friend_Request.belongsTo(models.User, { as: 'toUser', foreignKey: 'to' });
+        models.Friend_Request.belongsTo(models.User, { as: 'SentRequests', foreignKey: 'from' });
+        models.Friend_Request.belongsTo(models.User, { as: 'ReceivedRequests', foreignKey: 'to' });
     }
     return Friend_Request;
 }

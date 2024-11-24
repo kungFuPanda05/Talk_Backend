@@ -7,11 +7,18 @@ import db from '../../../models';
 
 
 let controller = async (req, res, next)=>{
+    let { limit=10, page=1, search = ""} = req.query;
+    console.log("Reaching to fetch messages contoller: ", limit, page, search);
+    limit = limit ? parseInt(limit, 10) : 10;
+    const offset = page ? (parseInt(page, 10) - 1) * limit : 0;
     const {chatId} = req.params;
     try{
         const messages = await db.Message.findAll({
-            attributes: ['id', 'content', ['sentBy', 'userId']],
-            where: { chatId }
+            attributes: ['id', 'content', ['sentBy', 'userId'], 'createdAt'],
+            where: { chatId },
+            order: [['createdAt', 'DESC']],
+            limit, 
+            offset
         });
         await db.ChatUser.update({
             newMessageCount: 0

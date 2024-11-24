@@ -17,8 +17,15 @@ let controller = async (req, res, next)=>{
                 to: strangerId
             }
         });
-        //ismein thode aur cases banenge sochke likhna
-        if(friend_request?.status==="Pending") throw new RequestError("Friend request had already been sent to the user", 409);
+        let reverse_friend = await db.Friend_Request.findOne({
+            where: {
+                from: strangerId,
+                to: selfId
+            }
+        });
+        if(friend_request?.status==="accepted" || reverse_friend?.status==="accepted") throw new RequestError("Already Added friends", 409);
+        if(reverse_friend?.status==='pending') throw new RequestError("Stranger had already sent you the friend request, Please Add", 409);
+        if(friend_request?.status==="pending") throw new RequestError("Friend request had already been sent to the user", 409);
 
         await db.Friend_Request.create({
             from: selfId,

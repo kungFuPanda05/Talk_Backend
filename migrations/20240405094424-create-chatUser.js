@@ -17,7 +17,8 @@ module.exports = {
           model: 'Users',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
       },
       chatId: {
         type: Sequelize.INTEGER,
@@ -26,7 +27,8 @@ module.exports = {
           model: 'Chats',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
       },
       newMessageCount: {
         type: Sequelize.INTEGER,

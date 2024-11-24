@@ -8,7 +8,7 @@ import { match } from '../../functions';
 
 let controller = async (req, res, next)=>{
     try{
-        let { limit, page, search = ""} = req.query;
+        let { limit=10, page=1, search = ""} = req.query;
         limit = limit ? parseInt(limit, 10) : 10;
         const offset = page ? (parseInt(page, 10) - 1) * limit : 0;
         let chats;
@@ -57,6 +57,7 @@ let controller = async (req, res, next)=>{
                 }
                 // Convert `chat` to a plain object to allow modification
                 chat = chat.get({ plain: true });
+                if(chat.Last_Message.content) chat.Last_Message.content = (chat.Last_Message.content.length>50)?(chat.Last_Message.content.slice(0, 50).trim()+"..."):(chat.Last_Message.content)
                 chat.newMessageCount = chat.ChatUsers[0]?.newMessageCount ?? 0;
                 delete chat.ChatUsers;
                 return chat;

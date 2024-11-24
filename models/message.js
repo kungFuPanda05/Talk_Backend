@@ -5,7 +5,7 @@ import bcypt from 'bcrypt';
 
 module.exports = (sequelize, DataTypes)=>{
     const Message = sequelize.define('Message', {
-        content: DataTypes.STRING,
+        content: DataTypes.TEXT,
         sentBy: DataTypes.INTEGER,
         chatId: DataTypes.INTEGER
     },{

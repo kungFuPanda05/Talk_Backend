@@ -17,7 +17,8 @@ module.exports = {
           model: 'Users',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
       },
       messId: {
         type: Sequelize.INTEGER,
@@ -26,7 +27,8 @@ module.exports = {
           model: 'Messages',
           key: 'id',
         },
-          onUpdate: 'CASCADE'
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
       },
       readAt:{
         type: Sequelize.DATE,

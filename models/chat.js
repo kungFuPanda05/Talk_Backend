@@ -9,7 +9,6 @@ module.exports = (sequelize, DataTypes)=>{
         groupAdmin: DataTypes.INTEGER,
         lastMessageId: DataTypes.INTEGER,
         avatar: DataTypes.STRING,
-        newMessageCount: DataTypes.INTEGER
     },{
         timestamps: true,
         paranoid: true

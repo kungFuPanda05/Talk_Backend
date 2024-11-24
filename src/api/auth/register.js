@@ -10,7 +10,8 @@ const validator = Joi.object().keys({
     name: Joi.string().required(),                      
     gender: Joi.string().valid('M', 'F').required(),      
     email: Joi.string().email().required(),              
-    password: Joi.string().min(8).required()              
+    password: Joi.string().min(8).required(),
+    logo: Joi.string()
 });
 
 let controller = async (req, res, next)=>{
