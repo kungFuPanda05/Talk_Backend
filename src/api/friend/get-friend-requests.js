@@ -21,6 +21,7 @@ let controller = async (req, res, next)=>{
                 to: userId,
                 status: 'pending'
             },
+            attributes: ['id', 'status'],
             order: [['createdAt', 'DESC']]
         });
         return res.status(200).json({
@@ -29,6 +30,7 @@ let controller = async (req, res, next)=>{
             response: friendRequests
         });
     }catch(error){
+        console.log("Error fetching friend requests: ", error);
         next(error);
     }
 }

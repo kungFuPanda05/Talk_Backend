@@ -7,13 +7,14 @@ module.exports = (sequelize, DataTypes)=>{
     const Friend_Request = sequelize.define('Friend_Request', {
         from: DataTypes.INTEGER,
         to: DataTypes.INTEGER,
-        status: DataTypes.ENUM("Accepted", "Pending", "Rejected")
+        status: DataTypes.ENUM("accepted", "pending", "rejected", "blocked")
     },{
         timestamps: true,
         paranoid: true
     })
 
     Friend_Request.associate = function (models){
+
         models.Friend_Request.belongsTo(models.User, { as: 'SentRequests', foreignKey: 'from' });
         models.Friend_Request.belongsTo(models.User, { as: 'ReceivedRequests', foreignKey: 'to' });
     }

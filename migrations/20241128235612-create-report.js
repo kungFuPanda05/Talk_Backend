@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('Friend_Requests', {
+        await queryInterface.createTable('Reports', {
             id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
@@ -30,27 +30,24 @@ module.exports = {
                 onUpdate: 'CASCADE',
                 onDelete: "CASCADE"
             },
-            status: {
-                type: Sequelize.ENUM('accepted', 'pending', 'rejected', 'blocked'),
-                allowNull: true,
-                defaultValue: 'pending', 
+            description: {
+                type: Sequelize.TEXT
             },
             createdAt: {
                 type: Sequelize.DATE,
-                allowNull: false,
+                allowNull: false
             },
             updatedAt: {
                 type: Sequelize.DATE,
-                allowNull: false,
+                allowNull: false
             },
             deletedAt: {
-                type: Sequelize.DATE,
-                allowNull: true
+                type: Sequelize.DATE
             }
-        });
+        })
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('Friend_Requests');
+        await queryInterface.dropTable('Reports');
     }
 };

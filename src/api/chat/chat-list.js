@@ -27,18 +27,20 @@ let controller = async (req, res, next)=>{
                     {
                         model: db.Message,
                         attributes: ['content', 'sentBy', 'createdAt'],
-                        as: 'Last_Message',   //TO DO: Deal with the case when the last message sent is very big in length
+                        as: 'Last_Message',  
                         required: false,    
                     }
                 ],
                 order: [[db.Sequelize.literal(`(SELECT m.createdAt FROM Messages AS m WHERE m.id = Chat.lastMessageId)`), 'DESC']],
 
             });
-                   
+            
             chats = await Promise.all(chats.map(async (chat) => {
+                // Convert `chat` to a plain object to allow modification
+                chat = chat.get({ plain: true });
                 if (chat.isGroupChat == 0) {
                     let user = await db.User.findOne({
-                        attributes: ['name'],
+                        attributes: ['id', 'name'],
                         include: [{
                             model: db.ChatUser,
                             attributes: [],
@@ -46,6 +48,14 @@ let controller = async (req, res, next)=>{
                             where: {
                                 chatId: chat.id
                             }
+                        },{
+                            model: db.Friend_Request,
+                            as: 'ReceivedRequests',
+                            attributes: ['status'],
+                            where: {
+                                from: req.user.id
+                            },
+                            required: false
                         }],
                         where: {
                             id: {
@@ -54,16 +64,16 @@ let controller = async (req, res, next)=>{
                         }
                     });
                     chat.chatName = user?.name ?? chat.chatName;
+                    chat.friendId = user.id;
+                    chat.status = (user.ReceivedRequests && user.ReceivedRequests[0].status) || "accepted"
                 }
-                // Convert `chat` to a plain object to allow modification
-                chat = chat.get({ plain: true });
                 if(chat.Last_Message.content) chat.Last_Message.content = (chat.Last_Message.content.length>50)?(chat.Last_Message.content.slice(0, 50).trim()+"..."):(chat.Last_Message.content)
                 chat.newMessageCount = chat.ChatUsers[0]?.newMessageCount ?? 0;
                 delete chat.ChatUsers;
                 return chat;
             }));
             chats = chats
-            .filter((c) => match(c.chatName, search))  
+            .filter((c) => (match(c.chatName, search) && c.status==="accepted"))  
             .slice(offset, offset + limit);     
             
 

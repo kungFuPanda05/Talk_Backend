@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes)=>{
         models.User.hasMany(models.Message, {foreignKey: 'sentBy'});
         models.User.hasMany(models.Friend_Request, { as: 'SentRequests', foreignKey: 'from' });
         models.User.hasMany(models.Friend_Request, { as: 'ReceivedRequests', foreignKey: 'to' });
+        models.User.hasMany(models.Report, { as: 'From', foreignKey: 'from' });
+        models.User.hasMany(models.Report, { as: 'To', foreignKey: 'to' });
+        
+
         models.User.belongsToMany(models.Chat, { through: models.ChatUser, foreignKey: "userId" });
     }
     return User;
