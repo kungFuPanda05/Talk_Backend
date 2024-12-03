@@ -10,17 +10,52 @@ import { Op } from 'sequelize';
 let controller = async (req, res, next)=>{
     
     try{
-        console.log("Req reached to set status");
-        const {status, strangerId} = req.body;
-        console.log("The req.body is: ", req.body);
-        let friend_request = await db.Friend_Request.update({
-            status: (status==='accept'?"accepted":"rejected"),
-        }, {
-            where: {
-                from: strangerId,
-                to: req.user.id
+        let {status, strangerId} = req.body;
+        if(status) status += "ed";
+        let friend_request;
+        if(status==="blocked"){
+            friend_request = await db.Friend_Request.findOne({
+                where: {
+                    from: req.user.id,
+                    to: strangerId
+                }
+            });
+            if(!friend_request){
+                friend_request = await db.Friend_Request.create({
+                    status,
+                    from: req.user.id,
+                    to: strangerId
+                });
+            }else{
+                friend_request = await db.Friend_Request.update({
+                    status,
+                }, {
+                    where: {
+                        from: req.user.id,
+                        to: strangerId
+                    }
+                });
             }
-        });
+        }else{
+            let isBlocked = await db.Friend_Request.create({
+                from: strangerId,
+                to: req.user.id,
+                where: {
+                    status: 'blocked'
+                }
+            });
+            if(isBlocked) throw new RequestError("The other user has blocked you, you can try sending a mail to them", 409);
+            friend_request = await db.Friend_Request.update({
+                status,
+            }, {
+                where: {
+                    from: strangerId,
+                    to: req.user.id
+                }
+            });
+
+        }
+        console.log(60);
         if(status==="accept"){
             let chat = await db.Chat.create({
                 chatName: req.user.id+"_"+strangerId,
@@ -36,7 +71,7 @@ let controller = async (req, res, next)=>{
         }
         res.status(200).json({
             success: true,
-            messages: 'Friend Request has been '+ status+"ed",
+            messages: 'Friend Request has been '+ status,
         });
     }catch(error){
         next(error);
