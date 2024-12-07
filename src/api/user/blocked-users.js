@@ -12,7 +12,7 @@ let controller = async (req, res, next) => {
         let blockedUsers, totalBlockedUsers;
         if(process.env.ULTRA_SEARCH=="true"){
             blockedUsers = await db.User.findAll({
-                attributes: ['id', 'name'],
+                attributes: ['id', 'name', 'Online'],
                 include: [{
                     attributes: [],
                     model: db.Friend_Request,
@@ -27,7 +27,7 @@ let controller = async (req, res, next) => {
         }else{
             [blockedUsers, totalBlockedUsers] = await Promise.all([
                 db.User.findAll({
-                    attributes: ['id', 'name'],
+                    attributes: ['id', 'name', 'Online'],
                     include: [{
                         attributes: [],
                         model: db.Friend_Request,

@@ -16,7 +16,7 @@ let controller = async (req, res, next) => {
 
 
             rejectedUsers = await db.User.findAll({
-                attributes: ['id', 'name'],
+                attributes: ['id', 'name', 'Online'],
                 include: [{
                     attributes: [],
                     model: db.Friend_Request,
@@ -31,7 +31,7 @@ let controller = async (req, res, next) => {
         }else{
             [rejectedUsers, totalRejectedUsers] = await Promise.all([
                 db.User.findAll({
-                    attributes: ['id', 'name'],
+                    attributes: ['id', 'name', 'Online'],
                     include: [{
                         attributes: [],
                         model: db.Friend_Request,

@@ -40,7 +40,7 @@ let controller = async (req, res, next)=>{
                 chat = chat.get({ plain: true });
                 if (chat.isGroupChat == 0) {
                     let user = await db.User.findOne({
-                        attributes: ['id', 'name'],
+                        attributes: ['id', 'name', 'Online'],
                         include: [{
                             model: db.ChatUser,
                             attributes: [],
@@ -65,7 +65,8 @@ let controller = async (req, res, next)=>{
                     });
                     chat.chatName = user?.name ?? chat.chatName;
                     chat.friendId = user.id;
-                    chat.status = (user.ReceivedRequests && user.ReceivedRequests[0].status) || "accepted"
+                    chat.friendOnlineStatus = user.Online>0?true: false
+                    chat.status = (user.ReceivedRequests && user.ReceivedRequests[0] && user.ReceivedRequests[0].status) || "accepted"
                 }
                 if(chat.Last_Message.content) chat.Last_Message.content = (chat.Last_Message.content.length>50)?(chat.Last_Message.content.slice(0, 50).trim()+"..."):(chat.Last_Message.content)
                 chat.newMessageCount = chat.ChatUsers[0]?.newMessageCount ?? 0;

@@ -13,6 +13,17 @@ let randomConnect = (io) => {
     try {
         io.on("connection", (socket) => {
             console.log("The socket connection has been established");
+            db.User.update(
+                {
+                    Online: db.sequelize.literal('Online + 1'), // Correct syntax
+                },
+                {
+                    where: {
+                        id: socket.user.id, // Ensure `socket.user.id` exists and is valid
+                    },
+                }
+            );
+            console.log("User with id: ", socket.user.id, " online count increased");
             let ghave = socket.user.gender;
             let randomRoomId;
             db.ChatUser.findAll({
@@ -27,6 +38,8 @@ let randomConnect = (io) => {
             }).catch(error => {
                 console.log("Unable to connect normal chats with socket: ", error);
             });
+            io.emit('online', socket.user.id);
+
             socket.on('join-room', ({ gwant }) => {
                 try {
                     console.log("Request received for assigning to random room, gwant: ", gwant, " ghave: ", ghave);
@@ -102,8 +115,28 @@ let randomConnect = (io) => {
             });
             
 
-            socket.on('disconnect', () => {
+            socket.on('disconnect', async() => {
                 console.log("The user disconnected");
+                let onlineCount = await db.User.findOne({
+                    attributes: ['Online'],
+                    where: {
+                        id: socket.user.id
+                    }
+                });
+                if(onlineCount.Online>0){
+                    db.User.update(
+                        {
+                            Online: onlineCount.Online - 1, 
+                        },
+                        {
+                            where: {
+                                id: socket.user.id, 
+                            },
+                        }
+                    );
+
+                }
+                if(onlineCount.Online==1) io.emit('offline', socket.user.id);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
     
             })

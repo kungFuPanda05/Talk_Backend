@@ -10,7 +10,8 @@ module.exports = (sequelize, DataTypes)=>{
         password: DataTypes.STRING,
         isAdmin: DataTypes.BOOLEAN,
         pic: DataTypes.STRING,
-        gender: DataTypes.ENUM('M', 'F')
+        gender: DataTypes.ENUM('M', 'F'),
+        Online: DataTypes.INTEGER
     },{
         timestamps: true,
         paranoid: true
