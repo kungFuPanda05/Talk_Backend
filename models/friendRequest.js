@@ -10,7 +10,13 @@ module.exports = (sequelize, DataTypes)=>{
         status: DataTypes.ENUM("accepted", "pending", "rejected", "blocked")
     },{
         timestamps: true,
-        paranoid: true
+        paranoid: true,
+        indexes: [
+            {
+                unique: true,
+                fields: ['from', 'to'], // Composite unique constraint
+            },
+        ],
     })
 
     Friend_Request.associate = function (models){

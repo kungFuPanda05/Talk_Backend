@@ -48,9 +48,18 @@ module.exports = {
                 allowNull: true
             }
         });
+
+        // Add a unique constraint on the combination of `from` and `to`
+        await queryInterface.addConstraint('Friend_Requests', {
+            fields: ['from', 'to'],
+            type: 'unique',
+            name: 'unique_friend_request' // Custom constraint name
+        });
     },
 
     async down(queryInterface, Sequelize) {
+        // Remove the unique constraint before dropping the table
+        await queryInterface.removeConstraint('Friend_Requests', 'unique_friend_request');
         await queryInterface.dropTable('Friend_Requests');
     }
 };
