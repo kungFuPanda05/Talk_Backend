@@ -3,6 +3,7 @@ import db from '../../../models'
 import { logoUpload } from '../../middleware/multer-config';
 import { validateBody } from '../../middleware/validator';
 import Joi from 'joi';
+import dbFunctions from '../../dbFunctions';
 const apiRouter = express.Router();
 // logoUpload.single('logo')
 
@@ -29,8 +30,8 @@ let controller = async (req, res, next)=>{
         console.log("password: ", password);
         console.log("pic: ", pic);
 
-        let createdUser = await db.User.create({name, gender, email, password, pic})
-        if(!createdUser) throw new RequestError("The User has not created");
+        
+        await dbFunctions.createUnique(db.User, {name, gender, email, password, pic});
 
         return res.status(200).json({
             success: true,

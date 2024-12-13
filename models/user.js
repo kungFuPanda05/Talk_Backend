@@ -6,7 +6,11 @@ import bcrypt from 'bcrypt';
 module.exports = (sequelize, DataTypes)=>{
     const User = sequelize.define('User', {
         name: DataTypes.STRING,
-        email: DataTypes.STRING,
+        email: {
+            type: DataTypes.STRING,
+            allowNull: false, // Ensures email is required
+            unique: true, // Enforces uniqueness at the ORM level
+        },
         password: DataTypes.STRING,
         isAdmin: DataTypes.BOOLEAN,
         pic: DataTypes.STRING,
@@ -31,6 +35,7 @@ module.exports = (sequelize, DataTypes)=>{
         models.User.hasMany(models.Friend_Request, { as: 'ReceivedRequests', foreignKey: 'to' });
         models.User.hasMany(models.Report, { as: 'From', foreignKey: 'from' });
         models.User.hasMany(models.Report, { as: 'To', foreignKey: 'to' });
+        models.User.hasMany(models.User_Package, {foreignKey: "userId"});
         
 
         models.User.belongsToMany(models.Chat, { through: models.ChatUser, foreignKey: "userId" });

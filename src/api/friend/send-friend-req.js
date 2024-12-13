@@ -5,6 +5,7 @@ import express from 'express';
 import jwtStrategy from '../../strategy/auth/jwtauth';
 import db from '../../../models';
 import { Op } from 'sequelize';
+import dbFunctions from '../../dbFunctions';
 
 
 let controller = async (req, res, next)=>{
@@ -27,10 +28,11 @@ let controller = async (req, res, next)=>{
         if(reverse_friend?.status==='pending') throw new RequestError("Stranger had already sent you the friend request, Please Add", 409);
         if(friend_request?.status==="pending") throw new RequestError("Friend request had already been sent to the user", 409);
 
-        await db.Friend_Request.create({
+        await dbFunctions.createUnique(db.Friend_Request, {
             from: selfId,
             to: strangerId
-        })
+        });
+
         
         res.status(200).json({
             success: true,

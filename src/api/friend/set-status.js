@@ -5,6 +5,7 @@ import express from 'express';
 import jwtStrategy from '../../strategy/auth/jwtauth';
 import db from '../../../models';
 import { Op } from 'sequelize';
+import dbFunctions from '../../dbFunctions';
 
 
 let controller = async (req, res, next)=>{
@@ -21,11 +22,11 @@ let controller = async (req, res, next)=>{
                 }
             });
             if(!friend_request){
-                friend_request = await db.Friend_Request.create({
+                friend_request = (await dbFunctions.createUnique(db.Friend_Request, {
                     status,
                     from: req.user.id,
                     to: strangerId
-                });
+                }))[0];
             }else{
                 friend_request = await db.Friend_Request.update({
                     status,
@@ -55,7 +56,6 @@ let controller = async (req, res, next)=>{
             });
 
         }
-        console.log(60);
         if(status==="accept"){
             let chat = await db.Chat.create({
                 chatName: req.user.id+"_"+strangerId,
