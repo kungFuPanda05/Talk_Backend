@@ -11,23 +11,16 @@ let controller = async (req, res, next)=>{
     
     try{
         const userId = req.user.id;
-        let friendRequests = await db.Friend_Request.findAll({
-            include: [{
-                model: db.User,
-                as: 'SentRequests',
-                attributes: ['id', 'name', 'Online']
-            }],
+        let count = await db.Friend_Request.count({
             where: {
                 to: userId,
                 status: 'pending'
             },
-            attributes: ['id', 'status'],
-            order: [['createdAt', 'DESC']]
         });
         return res.status(200).json({
             success: true,
             messages: "Friend Requests Fetched Successfully",
-            response: friendRequests
+            count
         });
     }catch(error){
         console.log("Error fetching friend requests: ", error);

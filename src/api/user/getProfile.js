@@ -5,7 +5,7 @@ import { Op } from 'sequelize';
 
 let controller = async (req, res, next) => {
     let profile = await db.User.findOne({
-        attributes: ['id', 'name', 'email'],
+        attributes: ['id', 'name', 'email', 'coins', 'gender'],
         where: {
             id: req.user.id
         },
