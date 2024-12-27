@@ -36,6 +36,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
+      coins: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false

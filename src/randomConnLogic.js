@@ -9,10 +9,33 @@ let person = {
     FWM: []
 }
 
+function getOnlineUsers(io, selfGender) {
+    let maleCount = 0;
+    let femaleCount = 0;
+    let onlineCount = 0;
+    // Loop through all connected sockets
+    io.sockets.sockets.forEach((socket) => {
+        if (socket.user && socket.user.gender) {
+            // if(!(socket.randomRoomId)){
+            //     if(socket.user
+            //         .gender==='M') maleCount++;
+            //     else femaleCount++;
+            // } 
+            onlineCount++;
+        }
+    });
+    if(selfGender==="M") return person.MWM.length<=person.MWF.length?"M":"F";
+    else return person.FWM.length<=person.FWF.length?"M":"F";
+
+}
+
+export let onlineUsers = [];
+
 let randomConnect = (io) => {
     try {
         io.on("connection", (socket) => {
             console.log("The socket connection has been established");
+            onlineUsers[socket.user.id] = socket.id;
             db.User.update(
                 {
                     Online: db.sequelize.literal('Online + 1'), // Correct syntax
@@ -39,10 +62,21 @@ let randomConnect = (io) => {
                 console.log("Unable to connect normal chats with socket: ", error);
             });
             io.emit('online', socket.user.id);
-
-            socket.on('join-room', ({ gwant }) => {
+            socket.on('join-room', async({ gwant }) => {
                 try {
                     console.log("Request received for assigning to random room, gwant: ", gwant, " ghave: ", ghave);
+                    if(gwant==="M" || gwant==='F') { 
+                        socket.hasPreference = true;
+                        let user = await db.User.findOne({
+                            attributes: ['coins'],
+                            where: {
+                                id: socket.user.id
+                            }
+                        })
+                        if(user.coins<=0)  throw new RequestError("You don't have sufficient coins");
+                    }else {
+                        gwant = getOnlineUsers(io, socket.user.gender);
+                    }
                     let wantHave = gwant + 'W' + ghave;
                     let revereseWantHave = ghave + 'W' + gwant;
                     console.log("\x1b[33m%s\x1b[0m", "person(before):", person);
@@ -70,20 +104,31 @@ let randomConnect = (io) => {
                             // Notify both users in the room that they are connected
                             const userIds = [];
 
-                            usersInRoom.forEach((socketId) => {
+                            usersInRoom.forEach(async(socketId) => {
                                 const userSocket = io.sockets.sockets.get(socketId); // Get the socket instance
                                 if (userSocket && userSocket.user && userSocket.user.id) {
                                     userIds.push(userSocket.user.id); // Access socket.user.id and store it
+                                    if(userSocket.hasPreference){
+                                        await db.User.update({
+                                            coins: db.Sequelize.literal(`coins-10`)
+                                        }, {
+                                            where: {
+                                                id: userSocket.user.id
+                                            }
+                                        })
+                                    }
                                 }
+
                             });
                             console.log("The room with id: ", socket.randomRoomId, " gets filled with users : ", userIds);
                             io.to(socket.randomRoomId).emit('strangers-connected', { success: true, message: "Connected to stranger", users: userIds });
+
                         }
                     }, 100);
 
                 } catch (error) {
                     console.log("Error in assigning a random room: ", error);
-                    socket.emit('error', { message: 'Error occured while connecting to stranger, please try again' });
+                    socket.emit('error', { message: error.message });
                 }
             });
             socket.on('leave-room', () => {
@@ -110,9 +155,27 @@ let randomConnect = (io) => {
             socket.on('send-request', () =>{
                 socket.to(socket.randomRoomId).emit('receive-request', true);
             });
-            socket.on('send-request-accept', () =>{
-                socket.to(socket.randomRoomId).emit('receive-request-accept', true);
+            // socket.on('send-request-accept', () =>{
+            //     socket.to(socket.randomRoomId).emit('receive-request-accept', true);
+            // });
+            socket.on('send-request-accept-later', (friendId) => {
+                // Find the socket ID of the friend
+                const friendSocketId = onlineUsers[friendId];
+                console.log("reached to send-request-accept-friend", friendSocketId);
+        
+                if (friendSocketId) {
+                    // Emit the message to the specific friend
+                    io.to(friendSocketId).emit(
+                        'receive-request-accept-later',
+                        `${socket.user.name} has accepted your friend request`
+                    );
+                    console.log(`Message sent to ${friendId}: ${socket.user.name} has accepted your friend request`);
+                } else {
+                    console.log(`User with ID ${friendId} is not online`);
+                }
             });
+
+            getOnlineUsers(io);
             
 
             socket.on('disconnect', async() => {
@@ -138,6 +201,9 @@ let randomConnect = (io) => {
                 }
                 if(onlineCount.Online==1) io.emit('offline', socket.user.id);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
+                if (socket.user?.id && onlineUsers[socket.user.id]) {
+                    delete onlineUsers[socket.user.id]; // Remove the user from onlineUsers map
+                }
     
             })
         });

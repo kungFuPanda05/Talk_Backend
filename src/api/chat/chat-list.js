@@ -68,7 +68,7 @@ let controller = async (req, res, next)=>{
                     chat.friendOnlineStatus = user.Online>0?true: false
                     chat.status = (user.ReceivedRequests && user.ReceivedRequests[0] && user.ReceivedRequests[0].status) || "accepted"
                 }
-                if(chat.Last_Message.content) chat.Last_Message.content = (chat.Last_Message.content.length>50)?(chat.Last_Message.content.slice(0, 50).trim()+"..."):(chat.Last_Message.content)
+                if(chat.Last_Message?.content) chat.Last_Message.content = (chat.Last_Message.content.length>50)?(chat.Last_Message.content.slice(0, 50).trim()+"..."):(chat.Last_Message.content)
                 chat.newMessageCount = chat.ChatUsers[0]?.newMessageCount ?? 0;
                 delete chat.ChatUsers;
                 return chat;

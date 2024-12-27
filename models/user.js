@@ -15,7 +15,8 @@ module.exports = (sequelize, DataTypes)=>{
         isAdmin: DataTypes.BOOLEAN,
         pic: DataTypes.STRING,
         gender: DataTypes.ENUM('M', 'F'),
-        Online: DataTypes.INTEGER
+        Online: DataTypes.INTEGER,
+        coins: DataTypes.INTEGER
     },{
         timestamps: true,
         paranoid: true

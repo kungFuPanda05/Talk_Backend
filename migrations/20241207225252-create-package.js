@@ -18,6 +18,12 @@ module.exports = {
             Description: {
                 type: Sequelize.STRING
             },
+            duration: {
+                type: Sequelize.INTEGER
+            },
+            coins: {
+                type: Sequelize.INTEGER
+            },
             createdAt: {
                 type: Sequelize.DATE,
                 allowNull: false

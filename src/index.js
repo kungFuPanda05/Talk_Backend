@@ -53,6 +53,10 @@ const PORT = process.env.APP_PORT || 4000;
 
 const server = app.listen(PORT, ()=>{
     console.log(`The app is running on port ${PORT}`);
+    db.User.update(
+        { Online: 0 },  // Update value
+        { where: {} }   // No conditions, update all users
+      );
 })
 
 const io = require('socket.io')(server, {
@@ -64,3 +68,5 @@ const io = require('socket.io')(server, {
 
 io.use(socketStrategy);
 randomConnect(io);
+
+export default io;

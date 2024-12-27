@@ -9,7 +9,9 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             unique: true
         },
-        Description: DataTypes.STRING
+        Description: DataTypes.STRING,
+        duration: DataTypes.INTEGER,
+        coins: DataTypes.INTEGER
     }, {
         timestamps: true,
         paranoid: true
