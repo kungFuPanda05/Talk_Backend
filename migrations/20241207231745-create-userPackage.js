@@ -51,7 +51,7 @@ module.exports = {
         await queryInterface.addConstraint('User_Packages', {
             fields: ['packageId', 'expiredAt'],
             type: 'unique',
-            name: 'unique_package_expiredAt'
+            name: 'packageId_expiredAt'
         });
     },
 

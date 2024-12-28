@@ -18,21 +18,25 @@ export default {
             return [record, true, "Created Successfully"];
         } catch (error) {
             if (error.name === "SequelizeUniqueConstraintError") {
-                const fields = error.errors.map(e => e.path);
-    
+                let fields = error.errors.map(e => e.path);
+                let tempArray = [];
+                for(let field of fields){
+                    for(let subField of field.split('_')) tempArray.push(subField);
+                }
+                fields = tempArray;
                 // Fetch the record, including soft-deleted ones
                 const record = await table.findOne({
                     attributes: ['id', 'deletedAt'],
                     paranoid: false,
                     where: this.prepareWhereCondition(fields, data),
-                    transaction
+                    raw: true
                 });
     
                 if (record) {
                     if (record.deletedAt) {
                         // Restore the soft-deleted record
                         await table.update(
-                            { deletedAt: null }, 
+                            { ...data, deletedAt: null }, 
                             { where: { id: record.id }, paranoid: false, transaction }
                         );
                         return [record, true, "Created Successfully"];

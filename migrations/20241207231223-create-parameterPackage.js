@@ -47,7 +47,7 @@ module.exports = {
         await queryInterface.addConstraint('Parameter_Packages', {
             fields: ['parameterId', 'packageId'],
             type: 'unique',
-            name: 'unique_parameter_user'
+            name: 'parameterId_packageId'
         });
     },
 

@@ -12,6 +12,15 @@ let controller = async (req, res, next)=>{
     
     try{
         const {selfId, strangerId} = req.body;
+        let isBlocked = await db.Friend_Request.findOne({
+            where: {
+                from: strangerId,
+                to: req.user.id,
+                status: 'blocked'
+            },
+            raw: true
+        });
+        if (isBlocked) throw new RequestError("The other user has blocked you, you can try sending a mail to them", 409);
         let friend_request = await db.Friend_Request.findOne({
             where: {
                 from: selfId,

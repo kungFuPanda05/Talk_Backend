@@ -24,6 +24,7 @@ let controller = async (req, res, next) => {
                 }
             });
             if (!friend_request) {
+                console.log("Creating unique: ", status, req.user.id, strangerId);
                 friend_request = (await dbFunctions.createUnique(db.Friend_Request, {
                     status,
                     from: req.user.id,
@@ -40,14 +41,6 @@ let controller = async (req, res, next) => {
                 });
             }
         } else {
-            let isBlocked = await db.Friend_Request.findOne({
-                from: strangerId,
-                to: req.user.id,
-                where: {
-                    status: 'blocked'
-                }
-            });
-            if (isBlocked) throw new RequestError("The other user has blocked you, you can try sending a mail to them", 409);
             friend_request = await db.Friend_Request.update({
                 status,
             }, {

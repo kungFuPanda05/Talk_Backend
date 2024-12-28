@@ -15,14 +15,20 @@ let controller = async (req, res, next)=>{
             attributes: ['status'],
             where: {
                 from: strangerId,
-                to: selfId
+                to: selfId,
+                status: {
+                    [Op.ne]: 'blocked'
+                }
             }
         });
         let reverseFriendReq = await db.Friend_Request.findOne({
             attributes: ['status'],
             where: {
                 from: selfId,
-                to: strangerId
+                to: strangerId,
+                status: {
+                    [Op.ne]: 'blocked'
+                }
             }
         })
         res.status(200).json({

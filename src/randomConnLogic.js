@@ -29,7 +29,7 @@ function getOnlineUsers(io, selfGender) {
 
 }
 
-export let onlineUsers = [];
+export let onlineUsers = {};
 
 let randomConnect = (io) => {
     try {
@@ -139,11 +139,11 @@ let randomConnect = (io) => {
             socket.on('message', (message) => {
                 try {
                     if (message.chatId!=0) {
-                        console.log("the message is received and sent to the chat: ", message.chatId, message.messageContent);
-                        io.to(message.chatId).emit('message', { userId: socket.user.id, content: message.messageContent, chatId: message.chatId });
+                        // console.log("the message is received and sent to the chat: ", message.chatId, message.messageContent);
+                        // socket.broadcast.to(message.chatId).emit('message', { userId: socket.user.id, content: message.messageContent, chatId: message.chatId });
                     } else {
                         console.log("the message is received and sent to the random-room: ", socket.randomRoomId, message.messageContent);
-                        io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0 });
+                        io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date() });
                     }
 
                 } catch (error) {

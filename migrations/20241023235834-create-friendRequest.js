@@ -53,7 +53,7 @@ module.exports = {
         await queryInterface.addConstraint('Friend_Requests', {
             fields: ['from', 'to'],
             type: 'unique',
-            name: 'unique_friend_request' // Custom constraint name
+            name: 'from_to' // Custom constraint name
         });
     },
 
