@@ -13,6 +13,7 @@ config.username = process.env.DB_USERNAME || config.username;
 config.password = process.env.DB_PASSWORD || config.password;
 config.port = process.env.DB_PORT || config.port;
 config.host = process.env.DB_HOST || config.host;
+console.log("The config is: ", config);
 const db = {};
 
 let sequelize;
