@@ -1,5 +1,8 @@
 To make google O-auth
 The multer image upload is not working
-change the gender flow from boolean to enum in register.js frontend
 when i am giving the invalid route then i am not getting the invalid route error and neither the request is consoling on the backend
-When the last message sent is very big in length then deal with that
+if the stranger is not connected for a very long time throw a message that there is not other stranger left
+fix connect stranger button alignment
+Add search functionality for messages
+Need to add infinitescroll for both the chat list and chats
+Show the total number of online users

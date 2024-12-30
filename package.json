@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "nodemon src/index.js --exec babel-node --presets @babel/env"
+    "start": "npx sequelize-cli db:migrate && nodemon src/index.js --exec babel-node --presets @babel/env"
   },
   "devDependencies": {
     "@babel/cli": "^7.23.9",
