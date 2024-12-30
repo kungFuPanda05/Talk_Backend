@@ -7,6 +7,12 @@ const process = require('process');
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/../config/config.json')[env];
+
+config.database = process.env.DB_DATABASE || config.database;
+config.username = process.env.DB_USERNAME || config.username;
+config.password = process.env.DB_PASSWORD || config.password;
+config.port = process.env.DB_PORT || config.port;
+config.host = process.env.DB_HOST || config.host;
 const db = {};
 
 let sequelize;
