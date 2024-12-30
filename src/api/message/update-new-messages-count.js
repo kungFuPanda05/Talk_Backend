@@ -5,6 +5,13 @@ import express from 'express';
 import jwtStrategy from '../../strategy/auth/jwtauth';
 import db from '../../../models';
 import { Op } from 'sequelize';
+import Joi from 'joi';
+import { validateBody } from '../../middleware/validator';
+
+const validator = Joi.object({
+    chatId: Joi.number().integer().required(), 
+    userId: Joi.number().integer().required(), 
+});
 
 
 let controller = async (req, res, next)=>{
@@ -30,6 +37,6 @@ let controller = async (req, res, next)=>{
 }
 
 const apiRouter = express.Router();
-apiRouter.route('/').post(jwtStrategy, controller);
+apiRouter.route('/').post(validateBody(validator), jwtStrategy, controller);
 export default apiRouter;
 
