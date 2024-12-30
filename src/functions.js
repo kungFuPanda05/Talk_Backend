@@ -36,6 +36,7 @@ function countCommonLetters(s1, s2) {
 
 
 export const match=(word, search)=>{
+    if(search=="") return true;
     let isSubstring = word.includes(search);
     let lgc = longestCommonSubsequence(word, search);
     let sameLetters = countCommonLetters(word, search);

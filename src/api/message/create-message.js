@@ -8,6 +8,14 @@ import { Op } from 'sequelize';
 import io from '../..';
 import { onlineUsers } from '../../randomConnLogic';
 import { on } from 'nodemon';
+import Joi from 'joi';
+import { validateBody } from '../../middleware/validator';
+
+const validator = Joi.object({
+    chatId: Joi.number().integer().required(), 
+    content: Joi.string().required(),   
+    identityKey: Joi.string().required(),   
+});
 
 
 let controller = async (req, res, next)=>{
@@ -15,6 +23,51 @@ let controller = async (req, res, next)=>{
     const sentBy = req.user.id;
     
     try{
+        let chat = await db.Chat.findOne({
+            attributes: ['isGroupChat'],
+            where: {
+                id: chatId
+            }
+        });
+        if(!chat) throw new RequestError("Invalid ChatId", 400);
+        if(!chat.isGroupChat){
+            let friend = await db.User.findOne({
+                attributes: ['id'],
+                include: [{
+                    model: db.ChatUser,
+                    attributes: [],
+                    where: {
+                        chatId
+                    }
+                }],
+                where: {
+                    id: {
+                        [Op.ne]: req.user.id
+                    }
+                },
+                raw: true
+            });
+            if (!friend) throw new RequestError("No friend found in this chat");
+
+            let isBlockedByYou = await db.Friend_Request.count({
+                where: {
+                    from: req.user.id,
+                    to: friend.id,
+                    status: "blocked"
+                }
+            });
+            if(isBlockedByYou) throw new RequestError("You had blocked this user, to send the message unblock", 409);
+            
+            let isBlocked = await db.Friend_Request.count({
+                where: {
+                    from: friend.id,
+                    to: req.user.id,
+                    status: "blocked"
+                }
+            });
+            if(isBlocked) throw new RequestError("The other user has blocked you");
+        }
+
         const message = await db.Message.create({
             chatId, content, sentBy
         })
@@ -61,6 +114,6 @@ let controller = async (req, res, next)=>{
 }
 
 const apiRouter = express.Router();
-apiRouter.route('/').post(jwtStrategy, controller);
+apiRouter.route('/').post(validateBody(validator), jwtStrategy, controller);
 export default apiRouter;
 

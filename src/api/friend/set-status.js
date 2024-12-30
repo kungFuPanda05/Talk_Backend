@@ -8,13 +8,19 @@ import { Op } from 'sequelize';
 import dbFunctions from '../../dbFunctions';
 import io from '../..';
 import { onlineUsers } from '../../randomConnLogic';
+import Joi from 'joi';
+import { validateBody } from '../../middleware/validator';
+
+const validator = Joi.object({
+    strangerId: Joi.number().integer().required(),
+    status: Joi.string().valid('block', 'accept', 'reject').required(),
+});
 
 
 let controller = async (req, res, next) => {
     try {
         let { status, strangerId } = req.body;
         if (status) status += "ed";
-        console.log("the status and strangerID is: ", status, strangerId);
         let friend_request;
         if (status === "blocked") {
             friend_request = await db.Friend_Request.findOne({
@@ -24,7 +30,6 @@ let controller = async (req, res, next) => {
                 }
             });
             if (!friend_request) {
-                console.log("Creating unique: ", status, req.user.id, strangerId);
                 friend_request = (await dbFunctions.createUnique(db.Friend_Request, {
                     status,
                     from: req.user.id,
@@ -89,6 +94,6 @@ let controller = async (req, res, next) => {
 }
 
 const apiRouter = express.Router();
-apiRouter.route('/').post(jwtStrategy, controller);
+apiRouter.route('/').post(validateBody(validator), jwtStrategy, controller);
 export default apiRouter;
 
