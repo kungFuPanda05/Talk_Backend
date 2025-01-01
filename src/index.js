@@ -11,7 +11,7 @@ import './errors'
 import { sanitize } from './middleware/sanitizer';
 import dotenv from 'dotenv';
 import compression from 'compression';
-import helmet from 'helmet'; 
+import helmet from 'helmet';
 
 
 dotenv.config();
