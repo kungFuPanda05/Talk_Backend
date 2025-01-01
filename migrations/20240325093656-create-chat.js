@@ -5,7 +5,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Chats', {
       id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED, // Use UNSIGNED
         allowNull: false,
         primaryKey: true,
         autoIncrement: true,
@@ -20,7 +20,7 @@ module.exports = {
         defaultValue: false,
       },
       groupAdmin: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.INTEGER.UNSIGNED, // Use UNSIGNED to match Users.id
         allowNull: true,
         references: {
           model: 'Users',
