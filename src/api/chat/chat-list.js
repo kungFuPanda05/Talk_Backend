@@ -34,7 +34,6 @@ let controller = async (req, res, next)=>{
                 order: [[db.Sequelize.literal(`(SELECT m.createdAt FROM Messages AS m WHERE m.id = Chat.lastMessageId)`), 'DESC']],
 
             });
-            console.log("The chats are: ", JSON.parse(JSON.stringify(chats)));
             
             chats = await Promise.all(chats.map(async (chat) => {
                 // Convert `chat` to a plain object to allow modification
