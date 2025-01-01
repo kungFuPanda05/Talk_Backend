@@ -22,16 +22,7 @@ let controller = async (req, res, next)=>{
         let user = await db.User.findOne({where: {email}});
         if(user) throw new RequestError("The user already exists, try login", 409);
         const pic = req.file? req.file.path : null;
-        console.log("PIC: ", pic);
-
-        console.log("name: ", name);
-        console.log("gender: ", gender);
-        console.log("email: ", email);
-        console.log("password: ", password);
-        console.log("pic: ", pic);
-
-        
-        await dbFunctions.createUnique(db.User, {name, gender, email, password, pic});
+        await dbFunctions.createUnique(db.User, {name, gender, email, password, pic, Online: 0});
 
         return res.status(200).json({
             success: true,

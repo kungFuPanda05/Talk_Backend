@@ -39,7 +39,7 @@ let controller = async (req, res, next)=>{
             chats = await Promise.all(chats.map(async (chat) => {
                 // Convert `chat` to a plain object to allow modification
                 chat = chat.get({ plain: true });
-                if (chat.isGroupChat == 0) {
+                if (!chat.isGroupChat) {
                     let user = await db.User.findOne({
                         attributes: ['id', 'name', 'Online'],
                         include: [{
