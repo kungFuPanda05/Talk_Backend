@@ -1,4 +1,5 @@
 import db from "../models";
+import { onlineUsers } from "./randomConnLogic";
 
 export const createMessage = async (req, chatId, content, createdAt) => {
     try {
