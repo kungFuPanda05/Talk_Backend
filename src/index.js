@@ -49,7 +49,6 @@ app.use((error, req, res, next) => {
 db.sequelize.authenticate()
 .then(()=>{
     console.log("Database is working correctly");
-    db.sequelize.sync();
 })
 .catch((err)=>{
     console.log(err, "Something went wrong with the Database!"); 
