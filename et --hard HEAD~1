@@ -1,0 +1,221 @@
+[33mcommit 4b5fad9312504193dae43ba19af7b47ce5b3eb5e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mprod[m[33m, [m[1;31morigin/prod[m[33m)[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:53:26 2025 +0530
+
+    fix
+
+[33mcommit 389c76c01eb6629e86a0b299ed98780be5af5a72[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:50:18 2025 +0530
+
+    natmastak
+
+[33mcommit 035837f1e1f04ccc3d8f643fc26a12a47ca228aa[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:42:59 2025 +0530
+
+    fix
+
+[33mcommit f9b26802bfbe0d3438d0cf1da00bbabacf505ca9[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:37:01 2025 +0530
+
+    fix
+
+[33mcommit e75ba1d6b95a3a985578a7af4551148c1a26fad1[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:32:36 2025 +0530
+
+    optimize message sent
+
+[33mcommit 0913309c0be865d4eb6aa39314afb28d6b51f9a8[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:10:14 2025 +0530
+
+    fix
+
+[33mcommit 6ce551fcff0dbec34939086f4d2f09f98e08076e[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 22:05:58 2025 +0530
+
+    refactor: Optimize message sent
+
+[33mcommit c30ce7871ace98b097f61402af4c60fae93b8c70[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Thu Jan 2 21:44:59 2025 +0530
+
+    refactor: Optimize message send
+
+[33mcommit 3b8a1f4243479ae637c6618e38cb5cb72bf042ee[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Jan 1 16:58:01 2025 +0530
+
+    fix
+
+[33mcommit 1c981752bb6eb5721fa16d68b2b69bd01d6fc41b[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Jan 1 16:52:09 2025 +0530
+
+    fix
+
+[33mcommit 3baa844fc5c9dfd65f6172618914d5471b530455[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Jan 1 16:50:56 2025 +0530
+
+    add console in chat list
+
+[33mcommit 499dd25b9463e91c13d6edcd152fd9fe7b137f03[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Jan 1 15:53:34 2025 +0530
+
+    config-console
+
+[33mcommit 50f506a64137ac00c90202a364d78d6fd7e9f048[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Jan 1 15:43:14 2025 +0530
+
+    fix
+
+[33mcommit 694cd96111bcc7d74e59c0a0234f09e17a1516a3[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Jan 1 14:12:33 2025 +0530
+
+    refactor: Take database credenetials in condig from .env
+
+[33mcommit c23e66ac038729e3b9ecafcee89e34d8f6aa878b[m[33m ([m[1;31morigin/debug[m[33m, [m[1;32mdebug[m[33m)[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 23:28:41 2024 +0530
+
+    prod-fix
+
+[33mcommit a09a29a1248d3ff0fb292ab95757b21132f649de[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 23:26:22 2024 +0530
+
+    prod
+
+[33mcommit 2093555c5dc9475ec2a235ae5af1f0f41da59309[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 23:26:03 2024 +0530
+
+    prod
+
+[33mcommit 9519a85de883dae759e3ddbd3237109672d130f6[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 23:19:31 2024 +0530
+
+    prod-ready
+
+[33mcommit 151c03ed899e7080eff72cafeaa3fde5295046b9[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 23:00:32 2024 +0530
+
+    fix
+
+[33mcommit 23d1082c6ef5a77bb82fd7ccd249e63eea3f84b9[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 21:40:25 2024 +0530
+
+    feat
+
+[33mcommit 2cac957d1fe2eaf79b8216ec4fe35ec735b93629[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Mon Dec 30 21:40:02 2024 +0530
+
+    refactor: Changed the code
+
+[33mcommit 76e77e3a31c7c0dcac4330261e7ddcbcb790fb2a[m[33m ([m[1;31morigin/change-message-flow[m[33m, [m[1;32mmain[m[33m, [m[1;32mchange-message-flow[m[33m)[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Sat Dec 28 17:13:32 2024 +0530
+
+    refactor: Change message sent flow
+
+[33mcommit 1921c1cc025f7cc1782c80ffdec2604f9fcae13c[m[33m ([m[1;31morigin/unique/constraints[m[33m, [m[1;31morigin/main[m[33m, [m[1;32munique/constraints[m[33m)[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Fri Dec 27 17:02:51 2024 +0530
+
+    feat: Many things
+
+[33mcommit 452955fe36213609a3fecf2464ec1ad25f158a2a[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Fri Dec 27 17:01:10 2024 +0530
+
+    feat: Many things implemented
+
+[33mcommit 83c7ce8bd63e6fd32147b58d78734e38d6fce3ae[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Fri Dec 13 22:00:37 2024 +0530
+
+    feat
+
+[33mcommit 9b75b754995e4e7a3c511ec1a37caeb38eb55ec1[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Fri Dec 13 22:00:19 2024 +0530
+
+    refactor: Update code considering the unique constraint
+
+[33mcommit c56b8d5b87202a1cc87fffe6bf90e5f0469b60a5[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Fri Dec 13 21:58:19 2024 +0530
+
+    refactor: Add unique constraint wherever necessary in tables
+
+[33mcommit 59431fe3ec9f5fcd6133bfeae08a2600078b0a5a[m[33m ([m[1;31morigin/online/users[m[33m, [m[1;32monline/users[m[33m)[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Sat Dec 7 12:47:53 2024 +0530
+
+    feat: Add show users online status in real time
+
+[33mcommit da150ebe6005f863b4f049d5326ef38988fd487a[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Tue Dec 3 21:54:55 2024 +0530
+
+    feat
+
+[33mcommit 6ca4365c4ad93f2d82e838785ef7354c766e2c26[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Tue Dec 3 21:54:30 2024 +0530
+
+    feat: Add reposrt functionality
+
+[33mcommit 2b98c0919bec02900381e86662e3de21203c747f[m[33m ([m[1;31morigin/one-socket[m[33m, [m[1;32mone-socket[m[33m)[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Sun Nov 24 19:30:02 2024 +0530
+
+    feat: Prototype ready
+
+[33mcommit 282630f5bfdad327094b783d7f3cba0a08e036d8[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Sun Nov 3 20:31:57 2024 +0530
+
+    refactor: Enable chatting with only one socket namespace
+
+[33mcommit dda64f7ee59f44374535b4146cd0eb3ff17d31be[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Fri Nov 1 18:02:59 2024 +0530
+
+    feat: Add dotenv, chat-list
+
+[33mcommit 694705f97a600076eeee482af8012aff2ea6629d[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Sun Oct 27 21:43:36 2024 +0530
+
+    feat: Add error handling, random and normal chat sockets, ultra search, friendRequest model
+
+[33mcommit b20fd9966cc7e11cebb9456b2e2211757ec3835c[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Oct 23 22:22:56 2024 +0530
+
+    feat: Add error handling and authentication middleware on socket connection
+
+[33mcommit 4fc313ebb52d178d7337ce1d3b69132874831392[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Wed Oct 23 22:21:02 2024 +0530
+
+    refactor: changed UUID to integer
+
+[33mcommit 51b209b7b80db302f15d8f924d00329ead9f9a87[m
+Author: The Conqueror <vishal7920821202@gmail.com>
+Date:   Sun Oct 20 16:34:56 2024 +0530
+
+    Add project on github
