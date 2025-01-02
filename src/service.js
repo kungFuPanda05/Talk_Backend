@@ -54,7 +54,7 @@ export const createMessage = async (req, chatId, content, createdAt) => {
         ).catch(err => console.log("Error occured while updating chatUser for chatId: ", chatId, err));
 
     } catch (error) {
-        console.log("Error creating the message: ", message);
+        console.log("Error creating the message: ", error);
     }
 
 
