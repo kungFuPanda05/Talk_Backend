@@ -37,6 +37,7 @@ export const createMessage = async (req, chatId, content, createdAt) => {
                 id: chatId
             }
         }).catch(err => console.log("Error occured while updating chat from chatId: ", chatId, err));
+        console.log("the online users are: ", onlineUsers);
         db.ChatUser.update(
             {
                 newMessageCount: db.Sequelize.literal('newMessageCount + 1'),
