@@ -23,6 +23,13 @@ let controller = async (req, res, next)=>{
     const sentBy = req.user.id;
     
     try{
+        let createdAt = new Date();
+        io.to(chatId).emit('message', { 
+            userId: req.user.id, 
+            content,
+            chatId,
+            createdAt
+        });
         let chat = await db.Chat.findOne({
             attributes: ['isGroupChat'],
             where: {
@@ -69,14 +76,9 @@ let controller = async (req, res, next)=>{
         }
 
         const message = await db.Message.create({
-            chatId, content, sentBy
+            chatId, content, sentBy, createdAt, updatedAt: createdAt
         })
-        io.to(chatId).emit('message', { 
-            userId: req.user.id, 
-            content,
-            chatId,
-            createdAt: message.createdAt
-        });
+        
         await db.Chat.update({
             lastMessageId: message.id
         }, {
