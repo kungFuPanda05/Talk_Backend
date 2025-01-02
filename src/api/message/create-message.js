@@ -38,55 +38,50 @@ let controller = async (req, res, next)=>{
         });
         if(!chat) throw new RequestError("Invalid ChatId", 400);
         if(!chat.isGroupChat){
-            let friend = await db.User.findOne({
-                attributes: ['id'],
-                include: [{
-                    model: db.ChatUser,
-                    attributes: [],
-                    where: {
-                        chatId
-                    }
-                }],
-                where: {
-                    id: {
-                        [Op.ne]: req.user.id
-                    }
-                },
-                raw: true
-            });
-            if (!friend) throw new RequestError("No friend found in this chat");
+            // let friend = await db.User.findOne({
+            //     attributes: ['id'],
+            //     include: [{
+            //         model: db.ChatUser,
+            //         attributes: [],
+            //         where: {
+            //             chatId
+            //         }
+            //     }],
+            //     where: {
+            //         id: {
+            //             [Op.ne]: req.user.id
+            //         }
+            //     },
+            //     raw: true
+            // });
+            // if (!friend) throw new RequestError("No friend found in this chat");
+            let [selfId, friendId] = chat.chatName.split('_');
+            if(friendId==req.user.id){
+                let temp = selfId;
+                selfId = friendId;
+                friendId = temp;
+            }
 
-            let isBlockedByYou = await db.Friend_Request.count({
-                where: {
-                    from: req.user.id,
-                    to: friend.id,
-                    status: "blocked"
-                }
-            });
-            if(isBlockedByYou) throw new RequestError("You had blocked this user, to send the message unblock", 409);
-            
-            let isBlocked = await db.Friend_Request.count({
-                where: {
-                    from: friend.id,
-                    to: req.user.id,
-                    status: "blocked"
-                }
-            });
-            if(isBlocked) throw new RequestError("The other user has blocked you");
+            const [isBlockedByYou, isBlocked] = await Promise.all([
+                db.Friend_Request.count({ where: { from: req.user.id, to: friendId, status: "blocked" } }),
+                db.Friend_Request.count({ where: { from: friendId, to: req.user.id, status: "blocked" } }),
+            ]);
+            if (isBlockedByYou) throw new RequestError("You had blocked this user, to send the message unblock", 409);
+            if (isBlocked) throw new RequestError("The other user has blocked you");
         }
 
         const message = await db.Message.create({
             chatId, content, sentBy, createdAt, updatedAt: createdAt
         })
         
-        await db.Chat.update({
+        db.Chat.update({
             lastMessageId: message.id
         }, {
             where: {
                 id: chatId
             }
-        });    
-        await db.ChatUser.update(
+        }).catch(err => console.log("Error occured while updating chat from chatId: ", chatId, err));    
+        db.ChatUser.update(
             {
                 newMessageCount: db.Sequelize.literal('newMessageCount + 1'),
             },
@@ -101,7 +96,7 @@ let controller = async (req, res, next)=>{
                     }
                 }
             }
-        );        
+        ).catch(err => console.log("Error occured while updating chatUser for chatId: ", chatId, err));    
         
         
         res.status(201).json({
