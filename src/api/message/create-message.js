@@ -31,7 +31,7 @@ let controller = async (req, res, next)=>{
             createdAt
         });
         let chat = await db.Chat.findOne({
-            attributes: ['isGroupChat'],
+            attributes: ['isGroupChat', 'chatName'],
             where: {
                 id: chatId
             }
