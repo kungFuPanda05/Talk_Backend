@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import db from "../models";
 import { onlineUsers } from "./randomConnLogic";
 
