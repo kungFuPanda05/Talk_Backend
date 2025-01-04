@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import socketStrategy from './strategy/auth/socketauth';
 import db from '../models';
+import { createMessage } from './service';
+import { Op } from 'sequelize';
 
 let person = {
     MWM: [],
@@ -54,10 +56,43 @@ let randomConnect = (io) => {
                 where: {
                     userId: socket.user.id
                 }
-            }).then(chats => {
+            }).then(async(chats) => {
                 for (let chat of chats) {
-                    socket.join(chat.chatId);
+                    const chatDetails = await db.Chat.findOne({
+                        attributes: ['chatName', 'isGroupChat'],
+                        where: { id: chat.chatId }
+                    });
+                
+                    if (!chatDetails) {
+                        throw new RequestError(`Chat not found for chatId: ${chat.chatId}`);
+                    }
+                
+                    if (!chatDetails.isGroupChat) {
+                
+                        const [selfId, friendId] = chatDetails.chatName.split('_');
+                        if (!selfId || !friendId) {
+                            throw new RequestError(`Invalid chatName format: ${chatDetails.chatName}`);
+                        }
+                
+                        const isBlocked = await db.Friend_Request.count({
+                            where: {
+                                status: "blocked",
+                                [Op.or]: [
+                                    { from: selfId, to: friendId },
+                                    { from: friendId, to: selfId }
+                                ]
+                            }
+                        });
+                
+                        if (!isBlocked) {
+                            console.log("socket joining to chatId: ", chat.chatId);
+                            socket.join(chat.chatId);
+                        }
+                    } else {
+                        socket.join(chat.chatId);
+                    }
                 }
+                
             }).catch(error => {
                 console.log("Unable to connect normal chats with socket: ", error);
             });
@@ -128,7 +163,14 @@ let randomConnect = (io) => {
 
                 } catch (error) {
                     console.log("Error in assigning a random room: ", error);
-                    socket.emit('error', { message: error.message });
+                    socket.emit('error', { 
+                        response: {
+                            data: {
+                                success: false,
+                                messages: error.errorList
+                            } 
+                        }
+                    });
                 }
             });
             socket.on('leave-room', () => {
@@ -136,19 +178,31 @@ let randomConnect = (io) => {
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
             })
 
-            socket.on('message', (message) => {
+            socket.on('message', async(message) => {
                 try {
                     if (message.chatId!=0) {
-                        // console.log("the message is received and sent to the chat: ", message.chatId, message.messageContent);
-                        // socket.broadcast.to(message.chatId).emit('message', { userId: socket.user.id, content: message.messageContent, chatId: message.chatId });
+                        console.log("the message is received and sent to the chat: ", message);
+                        let createdAt = new Date();
+                        io.to(message.chatId).emit('message', { userId: socket.user.id, content: message.messageContent, chatId: message.chatId, identityKey: message.identityKey, createdAt });
+                        createMessage(socket, message.chatId, message.messageContent, createdAt);
                     } else {
                         console.log("the message is received and sent to the random-room: ", socket.randomRoomId, message.messageContent);
-                        io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date() });
+                        io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey });
                     }
 
                 } catch (error) {
                     console.log("Error occured while sending the message: ", error);
-                    socket.emit('error', { message: "Unable to send the message" });
+                    if(!(error instanceof RequestError)){
+                        error = new RequestError("Unable to send the message", error.message);
+                    }
+                    socket.emit('error', { 
+                        response: {
+                            data: {
+                                success: false,
+                                messages: error.errorList
+                            } 
+                        }
+                    });
                 }
             })
 

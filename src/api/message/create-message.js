@@ -24,12 +24,6 @@ let controller = async (req, res, next)=>{
     
     try{
         let createdAt = Date.now();
-        io.to(chatId).emit('message', { 
-            userId: req.user.id, 
-            content,
-            chatId,
-            createdAt
-        });
         // let chat = await db.Chat.findOne({
         //     attributes: ['isGroupChat', 'chatName'],
         //     where: {
@@ -80,7 +74,7 @@ let controller = async (req, res, next)=>{
         //         }
         //     }
         // ).catch(err => console.log("Error occured while updating chatUser for chatId: ", chatId, err));    
-        createMessage(req, chatId, content, createdAt);
+        // createMessage(req, chatId, content, createdAt);
         
         res.status(200).json({
             success: true,

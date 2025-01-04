@@ -1,8 +1,11 @@
 import { Op } from "sequelize";
 import db from "../models";
 import { onlineUsers } from "./randomConnLogic";
+import io from "./index";
 
-export const createMessage = async (req, chatId, content, createdAt) => {
+export const createMessage = async (socket, chatId, content, createdAt) => {
+    let selfUserId = socket.user.id;
+    let selfId, friendId;
     try {
         let chat = await db.Chat.findOne({
             attributes: ['isGroupChat', 'chatName'],
@@ -12,23 +15,23 @@ export const createMessage = async (req, chatId, content, createdAt) => {
         });
         if (!chat) throw new RequestError("Invalid ChatId", 400);
         if (!chat.isGroupChat) {
-            let [selfId, friendId] = chat.chatName.split('_');
-            if (friendId == req.user.id) {
+            [selfId, friendId] = chat.chatName.split('_');
+            if (friendId == selfUserId) {
                 let temp = selfId;
                 selfId = friendId;
                 friendId = temp;
             }
 
             const [isBlockedByYou, isBlocked] = await Promise.all([
-                db.Friend_Request.count({ where: { from: req.user.id, to: friendId, status: "blocked" } }),
-                db.Friend_Request.count({ where: { from: friendId, to: req.user.id, status: "blocked" } }),
+                db.Friend_Request.count({ where: { from: selfUserId, to: friendId, status: "blocked" } }),
+                db.Friend_Request.count({ where: { from: friendId, to: selfUserId, status: "blocked" } }),
             ]);
             if (isBlockedByYou) throw new RequestError("You had blocked this user, to send the message unblock", 409);
             if (isBlocked) throw new RequestError("The other user has blocked you");
         }
 
         const message = await db.Message.create({
-            chatId, content, sentBy: req.user.id, createdAt, updatedAt: createdAt
+            chatId, content, sentBy: selfUserId, createdAt, updatedAt: createdAt
         })
 
         db.Chat.update({
@@ -49,7 +52,7 @@ export const createMessage = async (req, chatId, content, createdAt) => {
                     userId: {
                         [Op.and]: [
                             { [Op.notIn]: Object.keys(onlineUsers) }, // Exclude online users
-                            { [Op.ne]: req.user.id } // Exclude current user
+                            { [Op.ne]: selfUserId } // Exclude current user
                         ]
                     }
                 }
@@ -58,6 +61,26 @@ export const createMessage = async (req, chatId, content, createdAt) => {
 
     } catch (error) {
         console.log("Error creating the message: ", error);
+        if(error.message==="You had blocked this user, to send the message unblock" || error.message==="The other user has blocked you"){
+            socket.emit('error', { 
+                response: {
+                    data: {
+                        success: false,
+                        messages: error.errorList
+                    } 
+                }
+            });
+            socket.leave(chatId);
+            if(onlineUsers[friendId]){
+                const friendSocket = io.sockets.sockets.get(onlineUsers[friendId]); // Get the socket by its ID
+                if (friendSocket) {
+                    friendSocket.leave(chatId); // Make the friendSocket leave the specified room
+                    console.log(`friendSocket ${onlineUsers[friendId]} has left room ${chatId}`);
+                } else {
+                    console.log(`friendSocket with ID ${onlineUsers[friendId]} not found`);
+                }
+            }
+        }
     }
 
 
