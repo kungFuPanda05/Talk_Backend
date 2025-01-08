@@ -247,7 +247,7 @@ let randomConnect = (io) => {
                         person[revereseWantHave].push(randomRoomId);
                         setTimeout(() => {
                             connectBot(io, revereseWantHave, randomRoomId);
-                        }, 0);
+                        }, 5000);
                     }
 
                     console.log("\x1b[33m%s\x1b[0m", "person(after):", person);
