@@ -11,7 +11,7 @@ const socketStrategy = async (socket, next) => {
         if (err) {
             return next(new RequestError(err));
         }
-        socket.user = user;
+        socket.user = JSON.parse(JSON.stringify(user));
         next();
     })(socket.handshake , null , next);
 }

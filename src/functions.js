@@ -37,6 +37,8 @@ function countCommonLetters(s1, s2) {
 
 export const match=(word, search)=>{
     if(search=="") return true;
+    search = search.toLowerCase();
+    word = word.toLowerCase();
     let isSubstring = word.includes(search);
     let lgc = longestCommonSubsequence(word, search);
     let sameLetters = countCommonLetters(word, search);
@@ -51,4 +53,20 @@ export const match=(word, search)=>{
 
     return false;
 
+}
+
+export const similarityIndex=(word, search)=>{
+    search = search.toLowerCase();
+    word = word.toLowerCase();
+    if(word==search) return 1;
+    let isSubstring = word.includes(search);
+    let isReverseSubstring = search.includes(word);
+    let lgc = longestCommonSubsequence(word, search);
+    let sameLetters = countCommonLetters(word, search);
+    let lgcIndex = 1.2*(lgc/Math.max(word.length, search.length));
+    let sameLettersIndex = sameLetters/Math.max(word.length, search.length);
+    let score = 0;
+    score += isSubstring? 0.15:0;
+    score += isReverseSubstring? 0.15:0;
+    return (lgcIndex + sameLettersIndex)/2+score;
 }

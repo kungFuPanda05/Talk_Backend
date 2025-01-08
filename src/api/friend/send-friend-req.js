@@ -39,7 +39,8 @@ let controller = async (req, res, next)=>{
 
         await dbFunctions.createUnique(db.Friend_Request, {
             from: selfId,
-            to: strangerId
+            to: strangerId,
+            status: "pending"
         });
 
         

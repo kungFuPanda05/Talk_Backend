@@ -12,6 +12,7 @@ import { sanitize } from './middleware/sanitizer';
 import dotenv from 'dotenv';
 import compression from 'compression';
 import helmet from 'helmet';
+import path from 'path';
 
 
 dotenv.config();
@@ -19,25 +20,29 @@ const app = express();
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000"
-  }))
+}))
 
 
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 app.use(helmet());
 
 app.use(passport.initialize());
 app.use(expressSanitizer());
-
+app.use('/uploads', express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, path) => {
+        res.set('Content-Type', 'image/jpeg'); // Set appropriate MIME type
+    }
+}));
 
 app.use('/api', sanitize(), restRouter);
-app.get('/', (req, res)=>{
+app.get('/', (req, res) => {
     res.send("This is the home page");
 })
 app.use((error, req, res, next) => {
     console.log("The error occured is: ", error);
-    if(!(error instanceof RequestError)){
+    if (!(error instanceof RequestError)) {
         error = new RequestError("Some Error Ocurred", 500, error.message);
     }
     res.status(error.status || 500).json({
@@ -47,25 +52,25 @@ app.use((error, req, res, next) => {
 })
 
 db.sequelize.authenticate()
-.then(()=>{
-    console.log("Database is working correctly");
-})
-.catch((err)=>{
-    console.log(err, "Something went wrong with the Database!"); 
-})
+    .then(() => {
+        console.log("Database is working correctly");
+    })
+    .catch((err) => {
+        console.log(err, "Something went wrong with the Database!");
+    })
 
 const PORT = process.env.APP_PORT || 4000;
 
-const server = app.listen(PORT, ()=>{
+const server = app.listen(PORT, () => {
     console.log(`The app is running on port ${PORT}`);
     db.User.update(
         { Online: 0 },  // Update value
         { where: {} }   // No conditions, update all users
-      );
+    );
 })
 
 const io = require('socket.io')(server, {
-    pingTimeout:60000,
+    pingTimeout: 60000,
     cors: {
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
     },

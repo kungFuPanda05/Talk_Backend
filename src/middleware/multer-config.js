@@ -13,7 +13,6 @@ const imageFilter = (req, file, cb) => {
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const logosPath = path.join(__dirname, '..', 'public', 'logos');
-    console.log("Logospath: ", logosPath);
     cb(null, logosPath);
   },
   filename: function (req, file, cb) {
