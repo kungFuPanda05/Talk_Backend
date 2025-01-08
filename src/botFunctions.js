@@ -137,9 +137,16 @@ let FTM = {
     ],
     "tumhara naam kya hai": [
         "khud dekhlo",
+        "khud dekhlo",
         "Naam mein kya rakha hai",
         "Kya kroge naam jaan kar",
-        "SEND_REAL_NAME"
+        "Kya kroge naam jaan kar",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
     ],
     "kahan se ho": [
         "kya kroge jaan ke",
