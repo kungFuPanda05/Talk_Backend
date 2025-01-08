@@ -119,6 +119,8 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
                     botClientSocket.emit('leave-room');
                     const botSocketId = onlineUsers[bot.id];
                     const botSocket = io.sockets.sockets.get(botSocketId);
+                    if(bot.gender=="F") femaleBots.push(bot);
+                    else if(bot.gender=='M') maleBots.push(bot);
                     await botFunctions.clearBotReplies(botSocket.randomRoomId);
                 });
                 botClientSocket.on('strangers-connected', async (res) => {
