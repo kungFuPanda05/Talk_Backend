@@ -106,11 +106,13 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
         const token = JWTSign(bot, new Date());
         let botClientSocket;
         if (!onlineUsers[bot.id]) {
+            console.log("reaching inside !onlineUsers[bot.id]: ");
             botClientSocket = ioClient(process.env.BACKEND_URL, {
                 extraHeaders: {
                     Authorization: `Bearer ${token}` // Pass JWT token here
                 }
             });
+            console.log("the botSocketClient is: ", botClientSocket, token);
             // onlineUsers[bot.id] = botClientSocket.id;
             botClientSocket.on('connect', async () => {
                 console.log(`Bot ${bot.id} connected to the server`);
@@ -151,9 +153,21 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
                 })
             })
         } else botClientSocket = io.sockets.sockets.get(onlineUsers[bot.id]);
+
+        console.log("the online users bot: ", onlineUsers[bot.id]);
+        console.log("the bot clientSocket is: ", botClientSocket);
         if (botClientSocket) {
             botClientSocket.emit('join-room', { gwant: reverseWanthave[0] });
             // console.log(`Bot ${bot.id} joined room ${randomRoomId}`);
+        }else{
+            if(bot.gender=="F"){
+                femaleBots.push(bot);
+                console.log("Female bot "+bot.name+" has been pushed to available female bots bcoz of falsy botClientScoket: ", femaleBots.length);
+            }
+            else if(bot.gender=='M') {
+                maleBots.push(bot);
+                console.log("Male bot "+bot.name+" has been pushed to available male bots because of falsy botClientSocket: ", male.length);
+            }
         }
         // person[reverseWanthave] = person[reverseWanthave].filter(roomId => roomId !== randomRoomId);
     }
