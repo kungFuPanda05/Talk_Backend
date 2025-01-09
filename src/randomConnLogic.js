@@ -248,12 +248,12 @@ let randomConnect = (io) => {
                     if (gwant === "M" || gwant === 'F') {
                         socket.hasPreference = true;
                         let user = await db.User.findOne({
-                            attributes: ['coins'],
+                            attributes: ['id', 'coins'],
                             where: {
                                 id: socket.user.id
                             }
                         })
-                        if (user.coins <= 0) throw new RequestError("You don't have sufficient coins");
+                        if (user.coins <= 0 && !isBot[user.id]) throw new RequestError("You don't have sufficient coins");
                     } else {
                         gwant = getOnlineUsers(io, socket.user.gender);
                     }
@@ -269,9 +269,11 @@ let randomConnect = (io) => {
                     } else {
                         randomRoomId = crypto.randomUUID();
                         person[revereseWantHave].push(randomRoomId);
-                        setTimeout(() => {
-                            connectBot(io, revereseWantHave, randomRoomId);
-                        }, 5000);
+                        if(!socket.user.isAdmin){
+                            setTimeout(() => {
+                                connectBot(io, revereseWantHave, randomRoomId);
+                            }, 5000);
+                        }
                     }
 
                     console.log("\x1b[33m%s\x1b[0m", "person(after):", person);
