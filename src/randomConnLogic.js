@@ -88,7 +88,7 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
             if (femaleBots.length > 0) {
                 bot = femaleBots[0];
                 femaleBots.shift();
-                console.log("Female bot is fired to be connect to user");
+                console.log("Female bot is fired to be connect to user, remaining female bots: ", femaleBots.length);
             } else {
                 console.log("No female bots left");
                 return;
@@ -97,7 +97,7 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
             if (maleBots.length > 0) {
                 bot = maleBots[0];
                 maleBots.shift();
-                console.log("Male bot is fired to be connect to user");
+                console.log("Male bot is fired to be connect to user, remaining male bots: ", maleBots.length);
             } else {
                 console.log("No male bots left");
                 return;
@@ -119,8 +119,14 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
                     botClientSocket.emit('leave-room');
                     const botSocketId = onlineUsers[bot.id];
                     const botSocket = io.sockets.sockets.get(botSocketId);
-                    if(bot.gender=="F") femaleBots.push(bot);
-                    else if(bot.gender=='M') maleBots.push(bot);
+                    if(bot.gender=="F"){
+                        femaleBots.push(bot);
+                        console.log("Female bot "+bot.name+" has been pushed to available female bots: ", femaleBots.length);
+                    }
+                    else if(bot.gender=='M') {
+                        maleBots.push(bot);
+                        console.log("Male bot "+bot.name+" has been pushed to available male bots: ", male.length);
+                    }
                     await botFunctions.clearBotReplies(botSocket.randomRoomId);
                 });
                 botClientSocket.on('strangers-connected', async (res) => {
