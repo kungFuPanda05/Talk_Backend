@@ -118,7 +118,8 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
                 console.log(`Bot ${bot.id} connected to the server`);
                 botClientSocket.on('user-left', async (data) => {
                     console.log("The bot with id: ", bot.id, " leaving the room");
-                    botClientSocket.emit('leave-room');
+                    // botClientSocket.emit('leave-room');
+                    botClientSocket.disconnect();
                     const botSocketId = onlineUsers[bot.id];
                     const botSocket = io.sockets.sockets.get(botSocketId);
                     if(bot.gender=="F"){
