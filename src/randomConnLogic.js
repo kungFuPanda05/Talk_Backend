@@ -157,6 +157,12 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
         console.log("the online users bot: ", onlineUsers[bot.id]);
         console.log("the bot clientSocket is: ", botClientSocket);
         if (botClientSocket) {
+            if (botClientSocket.connected) {
+                console.log("botClientSocket is connected and can emit events.");
+              } else {
+                console.log("botClientSocket is not connected.");
+              }
+              
             botClientSocket.emit('join-room', { gwant: reverseWanthave[0] });
             // console.log(`Bot ${bot.id} joined room ${randomRoomId}`);
         }else{
