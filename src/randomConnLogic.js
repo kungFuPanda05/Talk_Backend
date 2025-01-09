@@ -53,6 +53,7 @@ let femaleBots = [];
 let maleBots = [];
 let isBot = {};
 let isBotsLoaded = false;
+let botClientSockets={};
 let loadBotAccounts = async () => {
     if (isBotsLoaded) return;
     try {
@@ -105,21 +106,21 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
         }
         const token = JWTSign(bot, new Date());
         let botClientSocket;
-        if (!onlineUsers[bot.id]) {
+        if (!botClientSockets[bot.id]) {
             console.log("reaching inside !onlineUsers[bot.id]: ");
             botClientSocket = ioClient(process.env.BACKEND_URL, {
                 extraHeaders: {
                     Authorization: `Bearer ${token}` // Pass JWT token here
                 }
             });
-            console.log("the botSocketClient is: ", botClientSocket, token);
-            // onlineUsers[bot.id] = botClientSocket.id;
+            // console.log("the botSocketClient is: ", botClientSocket, token);
+            botClientSockets[bot.id] = botClientSocket
             botClientSocket.on('connect', async () => {
                 console.log(`Bot ${bot.id} connected to the server`);
                 botClientSocket.on('user-left', async (data) => {
                     console.log("The bot with id: ", bot.id, " leaving the room");
-                    // botClientSocket.emit('leave-room');
-                    botClientSocket.disconnect();
+                    botClientSocket.emit('leave-room'); 
+                    // botClientSocket.disconnect();
                     const botSocketId = onlineUsers[bot.id];
                     const botSocket = io.sockets.sockets.get(botSocketId);
                     if(bot.gender=="F"){
@@ -153,17 +154,11 @@ let connectBot = async (io, reverseWanthave, randomRoomId) => {
                     }
                 })
             })
-        } else botClientSocket = io.sockets.sockets.get(onlineUsers[bot.id]);
+        } else botClientSocket = botClientSockets[bot.id];
 
-        console.log("the online users bot: ", onlineUsers[bot.id]);
-        console.log("the bot clientSocket is: ", botClientSocket);
+        // console.log("the online users bot: ", onlineUsers[bot.id]);
+        // console.log("the bot clientSocket is: ", botClientSocket);
         if (botClientSocket) {
-            if (botClientSocket.connected) {
-                console.log("botClientSocket is connected and can emit events.");
-              } else {
-                console.log("botClientSocket is not connected.");
-              }
-              
             botClientSocket.emit('join-room', { gwant: reverseWanthave[0] });
             // console.log(`Bot ${bot.id} joined room ${randomRoomId}`);
         }else{
