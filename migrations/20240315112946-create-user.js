@@ -41,6 +41,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
+      rating: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false

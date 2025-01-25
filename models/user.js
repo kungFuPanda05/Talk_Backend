@@ -16,7 +16,8 @@ module.exports = (sequelize, DataTypes)=>{
         pic: DataTypes.STRING,
         gender: DataTypes.ENUM('M', 'F'),
         Online: DataTypes.INTEGER,
-        coins: DataTypes.INTEGER
+        coins: DataTypes.INTEGER,
+        rating: DataTypes.INTEGER
     },{
         timestamps: true,
         paranoid: true
