@@ -61,13 +61,14 @@ db.sequelize.authenticate()
 
 const PORT = process.env.APP_PORT || 4000;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`The app is running on port ${PORT}`);
     db.User.update(
         { Online: 0 },  // Update value
         { where: {} }   // No conditions, update all users
     );
-})
+});
+
 
 const io = require('socket.io')(server, {
     pingTimeout: 60000,
