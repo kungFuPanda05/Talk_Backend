@@ -36,6 +36,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'public'), {
     }
 }));
 
+app.use((req, res, next) => {
+    console.log(`\x1b[31m${req.method}\x1b[0m \x1b[32m${req.url}\x1b[0m`);
+    next();
+});
+
 app.use('/api', sanitize(), restRouter);
 app.get('/', (req, res) => {
     res.send("This is the home page");
