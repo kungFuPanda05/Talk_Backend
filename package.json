@@ -2,7 +2,7 @@
   "scripts": {
     "start": "nodemon src/index.js --exec babel-node --presets @babel/env",
     "build": "babel src --out-dir dist --copy-files",
-    "start:prod": "pm2 src/index.js --exec babel-node --presets @babel/env"
+    "start:prod": "node dist/index.js"
   },
   "devDependencies": {
     "@babel/cli": "^7.23.9",

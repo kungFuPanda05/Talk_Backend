@@ -1,5 +1,15 @@
 {
     "plugins": ["@babel/plugin-transform-runtime"],
-    "presets": ["@babel/preset-env"],
+    "presets": [
+        [
+            "@babel/preset-env",
+            {
+                "targets": {
+                    "node": "current"
+                },
+                "modules": "commonjs"
+            }
+        ]
+    ],
     "ignore": ["node_modules", "src/public"]
 }
