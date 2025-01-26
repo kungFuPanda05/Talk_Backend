@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt'); // For password hashing (optional but recommen
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const users = [];
+    const Users = [];
     const now = new Date();
 
     const femaleNames = ['Aisha', 'Priya', 'Sneha', 'Nisha', 'Pooja', 'Riya', 'Anjali', 'Divya', 'Simran', 'Kavita', 'Meera', 'Neha', 'Shweta', 'Tanvi', 'Isha', 'Preeti', 'Vidya', 'Sarika'];
@@ -15,12 +15,12 @@ module.exports = {
 
       // Check if email already exists
       const existingUser = await queryInterface.sequelize.query(
-        `SELECT * FROM users WHERE email = ?`,
+        `SELECT * FROM Users WHERE email = ?`,
         { replacements: [email], type: queryInterface.sequelize.QueryTypes.SELECT }
       );
 
       if (existingUser.length === 0) {
-        users.push({
+        Users.push({
           name: isMale ? maleNames[i - 1] : femaleNames[i - 3], // Assign names
           gender: isMale ? 'M' : 'F',
           email: email,
@@ -36,14 +36,14 @@ module.exports = {
       }
     }
 
-    // Insert the generated data into the users table
-    if (users.length > 0) {
-      await queryInterface.bulkInsert('users', users, {});
+    // Insert the generated data into the Users table
+    if (Users.length > 0) {
+      await queryInterface.bulkInsert('Users', Users, {});
     }
   },
 
   down: async (queryInterface, Sequelize) => {
     // Remove the inserted data
-    await queryInterface.bulkDelete('users', { email: { [Sequelize.Op.like]: 'bot%@bot.com' } }, {});
+    await queryInterface.bulkDelete('Users', { email: { [Sequelize.Op.like]: 'bot%@bot.com' } }, {});
   },
 };
