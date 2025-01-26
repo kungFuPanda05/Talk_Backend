@@ -18,6 +18,7 @@ import path from 'path';
 dotenv.config();
 const app = express();
 
+app.options('*', cors()); // Enable CORS preflight for all routes
 app.use(cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000"
 }))
