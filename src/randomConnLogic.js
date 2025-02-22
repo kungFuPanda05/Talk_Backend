@@ -369,7 +369,7 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                         }
                         else if(bot.gender=='M') {
                             maleBots.push(bot);
-                            console.log("Male bot "+bot.name+" has been pushed to available male bots: ", male.length);
+                            console.log("Male bot "+bot.name+" has been pushed to available male bots: ", maleBots.length);
                         }
                         await botFunctions.clearBotReplies(botSocket.randomRoomId);
                     });
