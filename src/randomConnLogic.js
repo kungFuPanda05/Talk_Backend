@@ -656,9 +656,9 @@ let randomConnect = (io) => {
 
             socket.on('typing', (res) => {
                 if (res.chatId != 0) {
-                    socket.to(res.chatId).emit('typing-status', res);
+                    socket.to(res.chatId).emit('typing-status', {...res, userId: socket.user.id});
                 } else {
-                    socket.to(socket.randomRoomId).emit('typing-status', res);
+                    socket.to(socket.randomRoomId).emit('typing-status', {...res, userId: socket.user.id});
                 }
             })
 
