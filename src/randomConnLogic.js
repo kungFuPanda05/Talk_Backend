@@ -112,9 +112,7 @@ class UserTrie {
 			}
 			return false;
 		}
-        console.log("getRandomStranger: ", level);
 		for (const child of node.children.values()) {
-            console.log("inside the for lopps");
 			if (level == 0) {
 				// if (child.value == wantGender) {
 					return this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
@@ -137,11 +135,11 @@ class UserTrie {
 		}
 		return false;
     }
-    isRoomAvaialble(randomRoomId, level, node=this.root){
-        if(level==4){
+    // isRoomAvaialble(randomRoomId, level, node=this.root){
+    //     if(level==4){
 
-        }
-    }
+    //     }
+    // }
 }
 
 const JWTSign = (user, date) => {
@@ -379,18 +377,30 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                         await botFunctions.botInit(bot.gender, stranger.gender, res.roomId, bot.rating);
                     })
                     botClientSocket.on('message', async (message) => {
-                        const identityKey = uuidv4();
-                        if (message.userId != bot.id) {
-                            let user = await db.User.findOne({
-                                attributes: ['id', 'gender', 'name'],
-                                where: {
-                                    id: message.userId
+                        try{
+                            const identityKey = uuidv4();
+                            if (message.userId != bot.id) {
+                                let user = await db.User.findOne({
+                                    attributes: ['id', 'gender', 'name'],
+                                    where: {
+                                        id: message.userId
+                                    }
+                                });
+                                botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
+                                let reply = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
+                                botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
+                                botClientSocket.emit("message", { messageContent: reply, chatId: message.chatId, identityKey });
+                            }
+
+                        }catch(error){
+                            socket.emit('error', {
+                                response: {
+                                    data: {
+                                        success: false,
+                                        messages: error.errorList
+                                    }
                                 }
                             });
-                            botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
-                            let reply = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
-                            botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
-                            botClientSocket.emit("message", { messageContent: reply, chatId: message.chatId, identityKey });
                         }
                     })
                 })
@@ -516,6 +526,7 @@ let randomConnect = (io) => {
                     }
                     // console.log("UsersTrie before: ", rcUsers.print());
                     if(!randomRoomId) randomRoomId = rcUsers.findMatch(io, socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, 0);
+                    console.log("the random roomID after amtching---------------------->>>>>>>>>>>>>>>>>", randomRoomId);
                     if(!randomRoomId){
                         randomRoomId = crypto.randomUUID();
                         rcUsers.insert([socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, randomRoomId]);
@@ -662,7 +673,7 @@ let randomConnect = (io) => {
                 }
             })
 
-            getOnlineUsers(io);
+            // getOnlineUsers(io);
 
 
             socket.on('disconnect', async () => {

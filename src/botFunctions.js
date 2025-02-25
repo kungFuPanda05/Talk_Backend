@@ -411,26 +411,31 @@ export default {
     },
     async botReply(input, selfGender, strangerGender, roomId, selfName) {
         // let predefinedReply = matchedReply(input, selfGender, strangerGender);
-        console.log("The selfName is: ", selfName);
-        let predefinedReply = await matchedReplyAdvance(input, selfGender, strangerGender);
-        if (predefinedReply === "SEND_REAL_NAME") {
-            predefinedReply = [selfName, selfName, selfName, 'My name is '+ selfName, 'I am '+ selfName, 'I am '+ selfName + ' and you?', "mera naam hai "+ selfName][Math.floor(Math.random() * 4)];
-        }
-        gptPayloadObj[roomId].messages.push({ role: "user", content: input });
-        let reply = predefinedReply;
-        if (predefinedReply === "UNABLE_TO_PROCESS") {
-            console.log("The gpt payload is: ", gptPayloadObj[roomId]);
-            const response = await axios.post(process.env.GPT_URL, gptPayloadObj[roomId], {
-                headers: {
-                    Authorization: `Bearer ${process.env.GPT_KEY}`,
-                    "Content-Type": "application/json"
-                }
-            });
+        try{
+            console.log("The selfName is: ", selfName);
+            let predefinedReply = await matchedReplyAdvance(input, selfGender, strangerGender);
+            if (predefinedReply === "SEND_REAL_NAME") {
+                predefinedReply = [selfName, selfName, selfName, 'My name is '+ selfName, 'I am '+ selfName, 'I am '+ selfName + ' and you?', "mera naam hai "+ selfName][Math.floor(Math.random() * 4)];
+            }
+            gptPayloadObj[roomId].messages.push({ role: "user", content: input });
+            let reply = predefinedReply;
+            if (predefinedReply === "UNABLE_TO_PROCESS") {
+                console.log("The gpt payload is: ", gptPayloadObj[roomId]);
+                const response = await axios.post(process.env.GPT_URL, gptPayloadObj[roomId], {
+                    headers: {
+                        Authorization: `Bearer ${process.env.GPT_KEY}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+    
+                reply = response.data.choices[0].message.content;
+            }
+            gptPayloadObj[roomId].messages.push({ role: "assistant", content: reply });
+            return reply;
 
-            reply = response.data.choices[0].message.content;
+        }catch(error){
+            throw new RequestError("Stranger left the chat");
         }
-        gptPayloadObj[roomId].messages.push({ role: "assistant", content: reply });
-        return reply;
     },
     async clearBotReplies(roomId){
         console.log("Clearing the message history for bot chat room with id: ", roomId);
