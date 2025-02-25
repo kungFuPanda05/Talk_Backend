@@ -64,29 +64,30 @@ class UserTrie {
 			}
 			return false;
 		}
-
-		for (const child of node.children.values()) {
+        let randomRoomId = false;
+        // console.log("traversing inside findMatch: ", node.value, level, Array.from(node.children.values()));
+		for (const child of Array.from(node.children.values())) {
 			if (level == 0) {
 				if (child.value == wantGender) {
-					return this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
 				}
 			} else if (level == 1) {
 				let [minRating, maxRating] = wantRatingRange.split("_").map(Number);
 				if (child.value >= minRating && child.value <= maxRating) {
-					return this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
 				}
 			} else if (level == 2) {
 				if (child.value == selfGender || child.value=="R") {
-					return this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
 				}
 			} else if (level == 3) {
 				let [minRating, maxRating] = child.value.split("_").map(Number);
 				if (selfRating >= minRating && selfRating <= maxRating) {
-					return this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
 				}
 			}
 		}
-		return false;
+		return randomRoomId;
 	}
 
 	// Print the structure for debugging
@@ -95,7 +96,7 @@ class UserTrie {
 		if (node.children.size === 0) {
 			console.log(path);
 		}
-		for (const child of node.children.values()) {
+		for (const child of Array.from(node.children.values())) {
 			this.print(child, path);
 		}
 		path.pop();
@@ -112,28 +113,29 @@ class UserTrie {
 			}
 			return false;
 		}
-		for (const child of node.children.values()) {
+        let randomRoomId = false;
+		for (const child of Array.from(node.children.values())) {
 			if (level == 0) {
 				// if (child.value == wantGender) {
-					return this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
 				// }
 			} else if (level == 1) {
 				// let [minRating, maxRating] = wantRatingRange.split("_").map(Number);
 				// if (child.value >= minRating && child.value <= maxRating) {
-					return this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
 				// }
 			} else if (level == 2) {
 				if (child.value == selfGender || child.value=='R') {
-					return this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
 				}
 			} else if (level == 3) {
 				let [minRating, maxRating] = child.value.split("_").map(Number);
 				if (selfRating >= minRating && selfRating <= maxRating) {
-					return this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
 				}
 			}
 		}
-		return false;
+		return randomRoomId;
     }
     // isRoomAvaialble(randomRoomId, level, node=this.root){
     //     if(level==4){
@@ -525,9 +527,9 @@ let randomConnect = (io) => {
                         // gwant = getOnlineUsers(io, socket.user.gender);
                     }
                     // console.log("UsersTrie before: ", rcUsers.print());
+                    rcUsers.print();
                     if(!randomRoomId) randomRoomId = rcUsers.findMatch(io, socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, 0);
-                    console.log("the random roomID after amtching---------------------->>>>>>>>>>>>>>>>>", randomRoomId);
-                    if(!randomRoomId){
+                    if(!randomRoomId && socket.user.email.split('@')[1]!=='bot.com'){
                         randomRoomId = crypto.randomUUID();
                         rcUsers.insert([socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, randomRoomId]);
                         if(!socket.user.isAdmin){
@@ -541,7 +543,7 @@ let randomConnect = (io) => {
                             }, 5000);
                         }
                     }
-                    rcUsers.print();
+                    
                     // console.log("UsersTrie After: ", rcUsers.print());
                     // let wantHave = gwant + 'W' + ghave;
                     // let revereseWantHave = ghave + 'W' + gwant;
