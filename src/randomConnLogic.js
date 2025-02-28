@@ -535,7 +535,7 @@ let randomConnect = (io) => {
                         if(!socket.user.isAdmin){
                             setTimeout(async() => {
                                 try{
-                                    // await connectBot(io, socket, socket.user.gender, gwant==="R"?"F":gwant, miRating, maRating, randomRoomId);
+                                    await connectBot(io, socket, socket.user.gender, gwant==="R"?"F":gwant, miRating, maRating, randomRoomId);
 
                                 }catch(error){
                                     throw new RequestError("No online users with given preferences, please broaden your preferences")
