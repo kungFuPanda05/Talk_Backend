@@ -13,6 +13,8 @@ import dotenv from 'dotenv';
 import compression from 'compression';
 import helmet from 'helmet';
 import path from 'path';
+import { redisClient } from './redis';
+// import './worker'
 
 
 dotenv.config();
@@ -82,6 +84,8 @@ const io = require('socket.io')(server, {
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
     },
 });
+
+require("./worker");
 
 io.use(socketStrategy);
 randomConnect(io);

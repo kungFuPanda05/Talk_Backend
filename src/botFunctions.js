@@ -1,25 +1,79 @@
+import ChatTrie from "./chatContext";
 import { match, similarityIndex } from "./functions"
 import axios from 'axios';
+import { chatContexts } from "./randomConnLogic";
 
 let replies = {
     "hi": ["Hello", "Hi", "Hey", "Hi"],
     "hello": ["Hello", "Hi", "Hey", "Hi"],
     "hey": ["Hello", "Hi", "Hey", "Hi"],
-    "age": ['18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', 'wbu'],
-    "How are you": ["I'm good, what about you", "I'm fine, wbu", "I'm great", "I'm doing well", "mein theek hu, aap batao", "theek hu", "tum kaise ho"],
-    "lund legi": ['Badtameez'],
-    "randi": ['Badtameez', "Besharam", "Apne ghar mein bolna yeh sab", "chutiya", "teri ma?", "teri behen?"],
-    "bhosdike": ['Badtameez', 'Besharam', "Apne ghar mein bolna yeh sab", "chutiya"],
-    "chutiya": ['Badtameez', 'tu chutiya', 'Besharam'],
-    "gandu": ['Badtameez', "besharam"],
-    "mc": ['madarchod', 'hutt bhosdike'],
-    "bc": ['Badtameez', "teri behen ki chut", "teri ma ki chut"],
-    "madarchod": ['Badtameez', 'Besharam', "Apne ghar mein bolna yeh sab", "chutiya"],
-    "behenchod": ['Badtameez', 'Besharam', "nikal yaha se", "chutiya"],
-    "bhosdiwale": ['Badtameez', 'Besharam', "nikal yaha se", "chutiya"],
-    "chut": ['Badtameez', 'teri ma ki nahi hai kya?'],
-    "loda": ['Badtameez', 'kya hai yeh, bewakoof', 'Besharam'],
-    "lodu": ['Badtameez', 'tu lodu'],
+    "age": ['18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', 'wbu', "why do u wanna know?", "Why?", "kyu", "kyu apko kya krna", "old enough"],
+    "How are you": ["I'm good, what about you", "I'm fine, wbu", "I'm great", "I'm doing well", "mein theek hu, aap batao", "theek hu", "tum kaise ho", "theek", "aap", "tum", "theek nahi hu"],
+    "lund legi": [
+        'Badtameez', "Aukat me reh", "Tameez se baat kar", "Besharam", "Chup reh", "Zyada hero mat ban",
+        "Ja apne ghar me bol", "Hadd hai", "Maaza aa raha hai?", "Dheere bol", "Tameez seekh", "Koi sharam hai?",
+        "Apni maa se pooch", "Bhai tu theek hai?", "Chal nikal", "Ja naap tol ke aa", "Itni hi shauk hai to google kar",
+        "Zindagi me kuch kaam dhanda hai?", "Abe chup!", "Maa baap ne yehi sikhaya?", "Respect karna seekh", 
+        "Jaa pehle dawai le aa", "Hadd hai besharmi ki", "Mujhe nahi, apne doston se pooch"
+    ],
+    "randi": [
+        'Badtameez', "Besharam", "Apne ghar mein bolna yeh sab", "Chutiya", "Teri ma?", "Teri behen?",
+        "Aukat pata hai?", "Respect karna seekh", "Yeh sab idhar nahi chalega!", "Dheere bol!", "Apni izzat mat utaar",
+        "Tu to full gawar nikla", "Maa baap ka naam roshan kar raha hai?", "Mujhe nahi pata, apni behen se pooch",
+        "Zyada over smart mat ban", "Chal, ab chup ho ja", "Apni zindagi pe focus kar", "Padhai likhai kar",
+        "Respect dusron ka bhi karna seekh", "Yehi sikhaya tujhe?", "Tujhe seekhne ki zaroorat hai",
+        "Abe samajhdar ban!", "Tameez ka koi dose le le", "Hatt be, bawasir ho gaya kya?"
+    ],
+    "bhosdike": [
+        'Badtameez', 'Besharam', "Apne ghar mein bolna yeh sab", "Chutiya", "Maa baap ka naam roshan kar raha hai?",
+        "Tujhe sharam nahi aati?", "Tameez se baat kar", "Bhad me ja!", "Ja apni behen ko bol", "Dimaag kharaab hai kya?",
+        "Abe tu itna gira kyun?", "Koi tameez hai?", "Tu kuch aur nahi seekh sakta?", "Chup reh bhai", "Tu paagal hai kya?",
+        "Ghar me bataya hai ye sab?", "Apni behen ko aise bulate ho?", "Mujhe nahi, tere ko doctor ki zaroorat hai",
+        "Itna frustrated kyun hai?", "Tu school gaya tha kabhi?", "Nalayak!", "Chal, ab chup ho ja", "Bas kar bhai, hadd hoti hai"
+    ],
+    "chutiya": [
+        'Badtameez', 'Tu chutiya', 'Besharam', "Nikal yaha se", "Tere jese log society kharab karte hain",
+        "Lafandar kahin ka!", "Nalayak!", "Padhai likhai karle!", "Apni life pe dhyan de", "Behan ka bhai hai tu?",
+        "Shakal dekhi hai?", "Tu full gawar hai", "Abe gaali se kya milega?", "Bhaag yaha se", "Dimag kharab hai?",
+        "Tujhse kuch nahi hoga", "Koi tameez hai?", "Jaa padhai kar", "Apne ghar walo se puch, tu chutiya hai",
+        "Sharam kar le thodi", "Padhai likhai ka kuch fayda utha le", "Abe sudhar ja", "Chal ja, hawa aane de"
+    ],
+    "gandu": [
+        'Badtameez', "Besharam", "Ja ja ghar ja", "Hadd hai", "Teri maa ne yehi sikhaya?", "Koi izzat hai?",
+        "Bade aae gyaan dene wale!", "Chal nikal", "Ghar pe bol ye sab?", "Bheja kam karta hai?", "Tujhe sharam nahi aati?",
+        "Apni maa se seekh tameez", "Chal apna kaam kar", "Tu to full useless hai", "Abe kuch kaam dhanda kar",
+        "Tameez ka dose le le", "Bhai tu bawasir hai kya?", "Zindagi me kuch aur seekh le", "Shakal dekh pehle apni",
+        "Tujhe school bhejna chahiye", "Aukat pata hai?", "Duniya dekhi hai?", "Sudhar ja!"
+    ],
+    "mc": [
+        'Madarchod', 'Hatt bhosdike', "Badtameez", "Apne ghar pe bol", "Chup reh", "Bakwaas band kar",
+        "Sharam kar", "Koi tameez hai?", "Maa baap ko yaad kar", "Galiyon ka stock khatam ho gaya?",
+        "Apni behen ko madarchod bol ke dekho", "Bhai teri akal kahan hai?", "Abe full gawar hai kya?",
+        "Tujhe seekhne ki zaroorat hai", "Bas kar bhai, hadd hoti hai", "Respect karna seekh",
+        "Tere liye zindagi kya sirf gali hai?", "Dimag ka ilaaj kara le", "Abe sudhar ja",
+        "Tameez seekh le bhai", "Padhai likhai kar"
+    ],
+    "bc": [
+        'Badtameez', "Teri behen ki chut", "Teri ma ki chut", "Tameez se baat kar", "Sharam kar", "Ja ghar pe bol",
+        "Kaun sikhata hai tujhe yeh sab?", "Ma baap ka naam roshan mat kar", "Abe chup!", "Tameez naam ki cheez hai?",
+        "Yehi sikhaya gaya tujhe?", "Chal sudhar ja", "Koi izzat hai ya nahi?", "Shakal dekh apni",
+        "Gharwalo se pooch, izzat bachi hai?", "Tujhe full pagal khana bhejna chahiye", "Akal kahan hai?",
+        "Tujhe serious help ki zaroorat hai", "Bhaag yaha se", "Sharam kar le!"
+    ],
+    "loda": [
+        'Badtameez', 'Kya hai yeh, bewakoof', 'Besharam', "Ja padhai likhai kar", "Lafandar!", "Sharam kar",
+        "Ghar pe baat kar yeh sab?", "Tameez seekh", "Koi izzat hai?", "Tu bawasir hai kya?", "Kuch seekh le",
+        "Abe sudhar ja", "Tujhe sharam nahi aati?", "Chal chup ho ja", "Ja, kuch productive kaam kar",
+        "Respect karna seekh", "Teri maa teri izzat pe ro rahi hogi", "Yehi sikhaya tujhe?",
+        "Abe kuch aur bhi bol sakta hai?", "Dimag thikane pe hai?", "Apne maa baap ko proud kar!"
+    ],
+    "lodu": [
+        'Badtameez', 'Tu lodu', "Bewakoof", "Kya ukhaad raha hai?", "Ja ghar ja", "Apni aukat dekh", 
+        "Dimag sahi hai?", "Tujhe padhai likhai ka shauk nahi hai?", "Apni life pe dhyan de", "Maa baap ko yaad kar",
+        "Bhai full nalayak hai tu", "Sharam kar!", "Tameez ka koi dose le le", "Abe sudhar ja", 
+        "Jaa, tujhse nahi hoga", "Ja bhai, hawa aane de", "Zindagi me aur kuch nahi hai kya?", "Teri akal ghaas charne gayi?",
+        "Abe chup ho ja", "Chal sudhar ja!"
+    ]
 }
 let MTM = {
     // अभिवादन (Greetings)
@@ -136,11 +190,10 @@ let FTM = {
         "Bas kat rhi zindagi"
     ],
     "tumhara naam kya hai": [
-        "khud dekhlo",
-        "khud dekhlo",
+        "I don't know",
         "Naam mein kya rakha hai",
         "Kya kroge naam jaan kar",
-        "Kya kroge naam jaan kar",
+        "Kya kroge",
         "SEND_REAL_NAME",
         "SEND_REAL_NAME",
         "SEND_REAL_NAME",
@@ -153,6 +206,19 @@ let FTM = {
         "earth se",
         "india se",
         "pata nahi",
+        "idk",
+        "kyu",
+        "why",
+        "pata nahi",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
+        "SEND_REAL_LOCATION",
         "SEND_REAL_LOCATION"
     ],
     "kya karte ho": [
@@ -162,7 +228,15 @@ let FTM = {
         "study",
         "student",
         "study kr rhi hu",
-        "student hu abhi"
+        "student hu abhi",
+        "student hu",
+        "student",
+        "kuch nahi",
+        "pata nahi",
+        "idk",
+        "kyu",
+        "why",
+        "why r u asking",
     ],
 
     // मज़ेदार जवाब (Fun Responses)
@@ -178,12 +252,12 @@ let FTM = {
         "Pizza bina zindagi adhoori hai, hai na?",
         "Mujhe pizza pasand hai, tumhe?"
     ],
-    "kuch interesting batao": [
-        "kya intersting batau",
-        "Mere paas kuch interesting batane ko nahi hai",
-        "Mujhe kuch interesting nahi pata",
-        "Tum batao kuch interesting"
-    ],
+    // "kuch interesting batao": [
+    //     "kya intersting batau",
+    //     "Mere paas kuch interesting batane ko nahi hai",
+    //     "Mujhe kuch interesting nahi pata",
+    //     "Tum batao kuch interesting"
+    // ],
     "game khelte ho": [
         "na",
         "nahi",
@@ -297,41 +371,40 @@ let sentenceMatchRatio = (sentence, search) => {
     return Math.floor((absoluteSimilarityIndex + similarityRatio) / 2);
 }
 
-let matchedReply = (input, selfGender, strangerGender) => {
-    console.log("The selfGender is: ", selfGender);
-    console.log("The strangerGender is: ", strangerGender);
-    let reply = "";
-    let maxMatch = 0;
-    let tempReplies = {};
-    if (strangerGender === 'M' && selfGender === 'M') tempReplies = MTM;
-    else if (strangerGender === 'M' && selfGender === 'F') tempReplies = FTM;
-    else if (strangerGender === 'F' && selfGender === 'F') tempReplies = FTF;
-    else if (strangerGender === 'F' && selfGender === 'M') tempReplies = MTF;
-    for (let key in tempReplies) {
-        let matchRatio = sentenceMatchRatio(input, key);
-        if (matchRatio > maxMatch) {
-            maxMatch = matchRatio;
-            reply = tempReplies[key][Math.floor(Math.random() * tempReplies[key].length)];
-        }
-    }
-    tempReplies = replies;
-    for (let key in tempReplies) {
-        let matchRatio = sentenceMatchRatio(input, key);
-        if (matchRatio > maxMatch) {
-            maxMatch = matchRatio;
-            reply = tempReplies[key][Math.floor(Math.random() * tempReplies[key].length)];
-        }
-    }
-    if (maxMatch < process.env.MATCH_PERCENTAGE) return "UNABLE_TO_PROCESS";
-    return reply;
-}
+// let matchedReply = (input, selfGender, strangerGender) => {
+//     console.log("The selfGender is: ", selfGender);
+//     console.log("The strangerGender is: ", strangerGender);
+//     let reply = "";
+//     let maxMatch = 0;
+//     let tempReplies = {};
+//     if (strangerGender === 'M' && selfGender === 'M') tempReplies = MTM;
+//     else if (strangerGender === 'M' && selfGender === 'F') tempReplies = FTM;
+//     else if (strangerGender === 'F' && selfGender === 'F') tempReplies = FTF;
+//     else if (strangerGender === 'F' && selfGender === 'M') tempReplies = MTF;
+//     for (let key in tempReplies) {
+//         let matchRatio = sentenceMatchRatio(input, key);
+//         if (matchRatio > maxMatch) {
+//             maxMatch = matchRatio;
+//             reply = tempReplies[key][Math.floor(Math.random() * tempReplies[key].length)];
+//         }
+//     }
+//     tempReplies = replies;
+//     for (let key in tempReplies) {
+//         let matchRatio = sentenceMatchRatio(input, key);
+//         if (matchRatio > maxMatch) {
+//             maxMatch = matchRatio;
+//             reply = tempReplies[key][Math.floor(Math.random() * tempReplies[key].length)];
+//         }
+//     }
+//     if (maxMatch < process.env.MATCH_PERCENTAGE) return "UNABLE_TO_PROCESS";
+//     return reply;
+// }
 let matchedReplyAdvance = async (input, selfGender, strangerGender) => {
     let objName = eval(`${selfGender}T${strangerGender}`);
     let getSystemDefault = (objName) => {
         return `Which key matches the most from this stringified array: ${JSON.stringify(Object.keys(objName))}, just give me the name of the key nothing else, if nothing matches then send response UNABLE_TO_PROCESS`;
     }
     let gptSystemDefault = getSystemDefault(objName);
-    console.log("The gpt system default is: ", gptSystemDefault);
     const response = await axios.post(process.env.GPT_URL,
         {
             "model": "gpt-4o",
@@ -354,7 +427,7 @@ let matchedReplyAdvance = async (input, selfGender, strangerGender) => {
     });
     let objKey = response.data.choices[0].message.content;
 
-    if(objKey==="UNABLE_TO_PROCESS"){ 
+    if (objKey === "UNABLE_TO_PROCESS") {
         const response = await axios.post(process.env.GPT_URL,
             {
                 "model": "gpt-4o",
@@ -377,9 +450,8 @@ let matchedReplyAdvance = async (input, selfGender, strangerGender) => {
         });
         objKey = response.data.choices[0].message.content;
         objName = replies;
-        console.log("the obj key is: ", objKey);
     }
-    if(objKey==="UNABLE_TO_PROCESS" || !objName[objKey]) return objKey;
+    if (objKey === "UNABLE_TO_PROCESS" || !objName[objKey]) return objKey;
     return objName[objKey][Math.floor(Math.random() * objName[objKey].length)];
 }
 
@@ -388,7 +460,6 @@ let gptPayloadObj = {};
 
 export default {
     async botInit(selfGender, strangerGender, roomId, rating) {
-        console.log("rating: ", rating);
         systemRoleObj[roomId] = `
             You are connected to a stranger, and your task is to behave like a real human. 
             Your gender is ${selfGender}, rating is ${rating} while the stranger is of gender ${strangerGender}. 
@@ -398,7 +469,7 @@ export default {
             Inject humor and sarcasm where appropriate, but stay contextually relevant.
             Always make the conversation engaging and dynamic, just as a human would.Try to make responses as short as possible for example if someone say hi, hello, hey, then simply reply with hi, hello, if someone says how are you then say i am fine wbu or what abou you or mein toh theek hu, like that.
             Never ever say you are and AI or a bot, always pretend to be a human. if someone says m or f then tell whatever your gender is in a single word. Try to send replies as short as possible. Speak frankly. If someone tries to ask you random coding questions or anything technical then don't give them the definition, do not try to explain them, just give a human like response.
-            If the strangers talks trash to you, harasses you, abuse you, do not talk properly, makse you feel uncomfortable the in your response add INAPPROPROATE at the end
+            If the strangers talks trash to you, harasses you, abuse you, do not talk properly, makes you feel uncomfortable then in your response add INAPPROPROATE at the end
         `;
 
         gptPayloadObj[roomId] = {
@@ -411,41 +482,72 @@ export default {
     },
     async botReply(input, selfGender, strangerGender, roomId, selfName) {
         // let predefinedReply = matchedReply(input, selfGender, strangerGender);
-        try{
-            console.log("The selfName is: ", selfName);
-            let predefinedReply = await matchedReplyAdvance(input, selfGender, strangerGender);
-            if (predefinedReply === "SEND_REAL_NAME") {
-                predefinedReply = [selfName, selfName, selfName, 'My name is '+ selfName, 'I am '+ selfName, 'I am '+ selfName + ' and you?', "mera naam hai "+ selfName][Math.floor(Math.random() * 4)];
-            }
+        try {
+            let predefinedReply = "UNABLE_TO_PROCESS";
+            // let predefinedReply = await matchedReplyAdvance(input, selfGender, strangerGender);
+            // if (predefinedReply === "SEND_REAL_NAME") {
+            //     predefinedReply = [selfName, selfName, selfName, 'My name is ' + selfName, 'I am ' + selfName, 'I am ' + selfName + ' and you?', "mera naam hai " + selfName][Math.floor(Math.random() * 4)];
+            // }
             gptPayloadObj[roomId].messages.push({ role: "user", content: input });
             let reply = predefinedReply;
             if (predefinedReply === "UNABLE_TO_PROCESS") {
-                console.log("The gpt payload is: ", gptPayloadObj[roomId]);
-                const response = await axios.post(process.env.GPT_URL, gptPayloadObj[roomId], {
-                    headers: {
-                        Authorization: `Bearer ${process.env.GPT_KEY}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-    
-                reply = response.data.choices[0].message.content;
+                let chatTrie = new ChatTrie();
+                console.log("The chatcontexts is: ", chatContexts);
+                if(chatContexts[roomId]){
+                    console.log("The context for which searching is: ", chatContexts[roomId]);
+                    reply = await chatTrie.getReply(chatContexts[roomId]);
+                    console.log("\x1b[33mThe chatTries reply: \x1b[0m", reply);
+                }
+                let response;
+                if(!reply || reply==="UNABLE_TO_PROCESS"){
+                    response = await axios.post(process.env.GPT_URL, gptPayloadObj[roomId], {
+                        headers: {
+                            Authorization: `Bearer ${process.env.GPT_KEY}`,
+                            "Content-Type": "application/json"
+                        }
+                    });
+                    reply = response.data.choices[0].message.content;
+                }
             }
             gptPayloadObj[roomId].messages.push({ role: "assistant", content: reply });
             return reply;
 
-        }catch(error){
+        } catch (error) {
             throw new RequestError("Stranger left the chat");
         }
     },
-    async clearBotReplies(roomId){
+    async clearBotReplies(roomId) {
         console.log("Clearing the message history for bot chat room with id: ", roomId);
-        if(systemRoleObj[roomId]){
+        if (systemRoleObj[roomId]) {
             delete systemRoleObj[roomId];
             console.log("clear systemrole for roomId: ", roomId);
         };
-        if(gptPayloadObj[roomId]){
+        if (gptPayloadObj[roomId]) {
             delete gptPayloadObj[roomId];
             console.log("clear gptpayload for random roomId: ", roomId);
+        }
+    },
+    async gptMessageLabelling(message) {
+        try {
+            const response = await axios.post(process.env.GPT_URL, {
+                model: "gpt-4",
+                messages: [
+                    { role: "system", content: `You have to label the message ${message} in a single word from the list ["greet","bye","thanks","apology","question","answer","agree","disagree","compliment","flirt","abuse","joke","anger","excitement","sadness","sarcasm","command","request","spam","nsfw","bot","confused","informative","casual","warning","threat","motivational","inspirational","story","fact","opinion","suggestion","announcement","reminder","update","news","gossip","criticism","praise","shoutout","report","clarification","whatsapp","emoji","meme","copypasta","technical","error","celebration","tease","provocation","persuasion","humor","challenge","doubt","request_help","offer_help","encouragement","support","taunt"]
+                    , for example if someone had sent hello then label it as greet, remember just simply give the response consisting of one word i.e., label from the given list` }, // System role
+                ],
+                temperature: 1
+            }, {
+                headers: {
+                    Authorization: `Bearer ${process.env.GPT_KEY}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            let label = response.data.choices[0].message.content.toLowerCase();
+            if(typeof label !== "string") throw new RequestError("Gpt wasn't able to label messages correctly", label);
+            return label;
+        } catch (error) {
+            console.log("Error occured while labelling the message: ", message, error);
+            return null;
         }
     }
 }

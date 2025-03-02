@@ -1,8 +1,9 @@
 To make google O-auth
 The multer image upload is not working
-when i am giving the invalid route then i am not getting the invalid route error and neither the request is consoling on the backend
-if the stranger is not connected for a very long time throw a message that there is not other stranger left
+when i am giving the invalid route then i am not getting the invalid route error
 fix connect stranger button alignment
 Add search functionality for messages
 Need to add infinitescroll for both the chat list and chats
 Show the total number of online users
+
+note: abhi ke logic ke hisab se whenever process.env.chat_context_trie_store(don't remember exact aisa hi kuch naam hai dekh lena) is true then chat context will be generate and will be stored in trie, else if it is false chat chat context would be still maintained in case of chatting with bot but would not be stored in trie

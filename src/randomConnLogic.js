@@ -7,135 +7,140 @@ import config from '../config';
 import JWT from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import botFunctions from './botFunctions';
+import ChatTrie from './chatContext';
+import redis, { redisClient } from './redis';
+import { Queue } from 'bullmq';
+import addJobAndWait from './initQueue';
 const ioClient = require('socket.io-client');
+// const chatContextQueue = new Queue("chatContextQueue", { connection: redisClient });
 
 let singleRoomIds = {};
 class Node {
-	constructor(value) {
-		this.value = value;       // Value of the current node
-		this.children = new Map(); // Map to store children nodes
-	}
+    constructor(value) {
+        this.value = value;       // Value of the current node
+        this.children = new Map(); // Map to store children nodes
+    }
 }
 
 class UserTrie {
-	constructor() {
-		this.root = new Node(null); // Root is an empty node
-	}
+    constructor() {
+        this.root = new Node(null); // Root is an empty node
+    }
 
-	// Insert a sequence into the structure
-	insert(sequence) {
-        if (sequence.length !== 5 || 
-            typeof sequence[0] !== 'string' || 
-            typeof sequence[1] !== 'number' || 
-            typeof sequence[2] !== 'string' || 
-            !/^\d+_\d+$/.test(sequence[3]) || 
-            (typeof sequence[4] !== 'number' && typeof sequence[4]!=="string")) {
+    // Insert a sequence into the structure
+    insert(sequence) {
+        if (sequence.length !== 5 ||
+            typeof sequence[0] !== 'string' ||
+            typeof sequence[1] !== 'number' ||
+            typeof sequence[2] !== 'string' ||
+            !/^\d+_\d+$/.test(sequence[3]) ||
+            (typeof sequence[4] !== 'number' && typeof sequence[4] !== "string")) {
             throw new Error('Invalid sequence format. Expected format: ["gender", rating, "gender", "rating_rating", "roomId"]');
         }
-		let current = this.root;
+        let current = this.root;
 
-		for (let i = 0; i < sequence.length; i++) {
-			let item = sequence[i];
-			if (i == sequence.length - 1) {
-				if (!current.children.has("roomId")) {
-					current.children.set("roomId", new Node([item]));
-				} else {
-					current.children.get("roomId").value.push(item);
-				}
+        for (let i = 0; i < sequence.length; i++) {
+            let item = sequence[i];
+            if (i == sequence.length - 1) {
+                if (!current.children.has("roomId")) {
+                    current.children.set("roomId", new Node([item]));
+                } else {
+                    current.children.get("roomId").value.push(item);
+                }
                 singleRoomIds[item] = 1;
-			} else {
-				if (!current.children.has(item)) {
-					current.children.set(item, new Node(item));
-				}
-				current = current.children.get(item);
-			}
-		}
-	}
+            } else {
+                if (!current.children.has(item)) {
+                    current.children.set(item, new Node(item));
+                }
+                current = current.children.get(item);
+            }
+        }
+    }
 
-	// Match users based on gender and rating
-	findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level = 0, node = this.root) {
-		if (level == 4) {
-			// Check if roomIds exist
+    // Match users based on gender and rating
+    findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level = 0, node = this.root) {
+        if (level == 4) {
+            // Check if roomIds exist
             while (node.children.get("roomId").value.length > 0 && !(io.sockets?.adapter?.rooms?.get(node.children.get("roomId").value[0])?.size)) node.children.get("roomId").value.shift(); //removing those rooms which no longer exists 
-			if (node.children.has("roomId") && node.children.get("roomId").value.length > 0) {
+            if (node.children.has("roomId") && node.children.get("roomId").value.length > 0) {
                 let roomId = node.children.get("roomId").value.shift();
                 singleRoomIds[roomId] = 0;
-				return roomId;
-			}
-			return false;
-		}
+                return roomId;
+            }
+            return false;
+        }
         let randomRoomId = false;
         // console.log("traversing inside findMatch: ", node.value, level, Array.from(node.children.values()));
-		for (const child of Array.from(node.children.values())) {
-			if (level == 0) {
-				if (child.value == wantGender) {
-					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
-				}
-			} else if (level == 1) {
-				let [minRating, maxRating] = wantRatingRange.split("_").map(Number);
-				if (child.value >= minRating && child.value <= maxRating) {
-					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
-				}
-			} else if (level == 2) {
-				if (child.value == selfGender || child.value=="R") {
-					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
-				}
-			} else if (level == 3) {
-				let [minRating, maxRating] = child.value.split("_").map(Number);
-				if (selfRating >= minRating && selfRating <= maxRating) {
-					randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
-				}
-			}
-		}
-		return randomRoomId;
-	}
+        for (const child of Array.from(node.children.values())) {
+            if (level == 0) {
+                if (child.value == wantGender) {
+                    randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+                }
+            } else if (level == 1) {
+                let [minRating, maxRating] = wantRatingRange.split("_").map(Number);
+                if (child.value >= minRating && child.value <= maxRating) {
+                    randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+                }
+            } else if (level == 2) {
+                if (child.value == selfGender || child.value == "R") {
+                    randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+                }
+            } else if (level == 3) {
+                let [minRating, maxRating] = child.value.split("_").map(Number);
+                if (selfRating >= minRating && selfRating <= maxRating) {
+                    randomRoomId ||= this.findMatch(io, selfGender, selfRating, wantGender, wantRatingRange, level + 1, child);
+                }
+            }
+        }
+        return randomRoomId;
+    }
 
-	// Print the structure for debugging
-	print(node = this.root, path = []) {
-		path.push(node.value);
-		if (node.children.size === 0) {
-			console.log(path);
-		}
-		for (const child of Array.from(node.children.values())) {
-			this.print(child, path);
-		}
-		path.pop();
-	}
+    // Print the structure for debugging
+    print(node = this.root, path = []) {
+        path.push(node.value);
+        if (node.children.size === 0) {
+            console.log(path);
+        }
+        for (const child of Array.from(node.children.values())) {
+            this.print(child, path);
+        }
+        path.pop();
+    }
 
-    getRandomStranger(io, selfGender, selfRating, level, node = this.root){
+    getRandomStranger(io, selfGender, selfRating, level, node = this.root) {
         if (level == 4) {
-			// Check if roomIds exist
+            // Check if roomIds exist
             while (node.children.get("roomId").value.length > 0 && !(io.sockets?.adapter?.rooms?.get(node.children.get("roomId").value[0])?.size)) node.children.get("roomId").value.shift(); //removing those rooms which no longer exists 
-			if (node.children.has("roomId") && node.children.get("roomId").value.length > 0) {
+            if (node.children.has("roomId") && node.children.get("roomId").value.length > 0) {
                 let roomId = node.children.get("roomId").value.shift();
                 singleRoomIds[roomId] = 0;
-				return roomId;
-			}
-			return false;
-		}
+                return roomId;
+            }
+            return false;
+        }
         let randomRoomId = false;
-		for (const child of Array.from(node.children.values())) {
-			if (level == 0) {
-				// if (child.value == wantGender) {
-					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
-				// }
-			} else if (level == 1) {
-				// let [minRating, maxRating] = wantRatingRange.split("_").map(Number);
-				// if (child.value >= minRating && child.value <= maxRating) {
-					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
-				// }
-			} else if (level == 2) {
-				if (child.value == selfGender || child.value=='R') {
-					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
-				}
-			} else if (level == 3) {
-				let [minRating, maxRating] = child.value.split("_").map(Number);
-				if (selfRating >= minRating && selfRating <= maxRating) {
-					randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
-				}
-			}
-		}
-		return randomRoomId;
+        for (const child of Array.from(node.children.values())) {
+            if (level == 0) {
+                // if (child.value == wantGender) {
+                randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+                // }
+            } else if (level == 1) {
+                // let [minRating, maxRating] = wantRatingRange.split("_").map(Number);
+                // if (child.value >= minRating && child.value <= maxRating) {
+                randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+                // }
+            } else if (level == 2) {
+                if (child.value == selfGender || child.value == 'R') {
+                    randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+                }
+            } else if (level == 3) {
+                let [minRating, maxRating] = child.value.split("_").map(Number);
+                if (selfRating >= minRating && selfRating <= maxRating) {
+                    randomRoomId ||= this.getRandomStranger(io, selfGender, selfRating, level + 1, child);
+                }
+            }
+        }
+        return randomRoomId;
     }
     // isRoomAvaialble(randomRoomId, level, node=this.root){
     //     if(level==4){
@@ -143,6 +148,8 @@ class UserTrie {
     //     }
     // }
 }
+
+export let chatContexts = {}; //"M_greet|F_greet|M_abuse(madarchod)"
 
 const JWTSign = (user, date) => {
     return JWT.sign(
@@ -188,7 +195,7 @@ let femaleBots = [];
 let maleBots = [];
 let isBot = {};
 let isBotsLoaded = false;
-let botClientSockets={};
+let botClientSockets = {};
 let loadBotAccounts = async () => {
     if (isBotsLoaded) return;
     try {
@@ -215,103 +222,9 @@ let loadBotAccounts = async () => {
     }
 };
 
-// let connectBot = async (io, reverseWanthave, randomRoomId) => {
-//     await loadBotAccounts();
-//     if (person[reverseWanthave].includes(randomRoomId)) {
-//         let bot;
-//         let strangerGender = reverseWanthave[2];
-//         if (strangerGender === 'F') {
-//             if (femaleBots.length > 0) {
-//                 bot = femaleBots[0];
-//                 femaleBots.shift();
-//                 console.log("Female bot is fired to be connect to user, remaining female bots: ", femaleBots.length);
-//             } else {
-//                 console.log("No female bots left");
-//                 return;
-//             }
-//         } else {
-//             if (maleBots.length > 0) {
-//                 bot = maleBots[0];
-//                 maleBots.shift();
-//                 console.log("Male bot is fired to be connect to user, remaining male bots: ", maleBots.length);
-//             } else {
-//                 console.log("No male bots left");
-//                 return;
-//             }
-//         }
-//         const token = JWTSign(bot, new Date());
-//         let botClientSocket;
-//         if (!botClientSockets[bot.id]) {
-//             console.log("reaching inside !onlineUsers[bot.id]: ");
-//             botClientSocket = ioClient(process.env.BACKEND_URL, {
-//                 extraHeaders: {
-//                     Authorization: `Bearer ${token}` // Pass JWT token here
-//                 }
-//             });
-//             // console.log("the botSocketClient is: ", botClientSocket, token);
-//             botClientSockets[bot.id] = botClientSocket
-//             botClientSocket.on('connect', async () => {
-//                 console.log(`Bot ${bot.id} connected to the server`);
-//                 botClientSocket.on('user-left', async (data) => {
-//                     console.log("The bot with id: ", bot.id, " leaving the room");
-//                     botClientSocket.emit('leave-room'); 
-//                     // botClientSocket.disconnect();
-//                     const botSocketId = onlineUsers[bot.id];
-//                     const botSocket = io.sockets.sockets.get(botSocketId);
-//                     if(bot.gender=="F"){
-//                         femaleBots.push(bot);
-//                         console.log("Female bot "+bot.name+" has been pushed to available female bots: ", femaleBots.length);
-//                     }
-//                     else if(bot.gender=='M') {
-//                         maleBots.push(bot);
-//                         console.log("Male bot "+bot.name+" has been pushed to available male bots: ", male.length);
-//                     }
-//                     await botFunctions.clearBotReplies(botSocket.randomRoomId);
-//                 });
-//                 botClientSocket.on('strangers-connected', async (res) => {
-//                     let users = res.users;
-//                     let stranger = users.find(user => user.id !== bot.id);
-//                     await botFunctions.botInit(bot.gender, stranger.gender, res.roomId);
-//                 })
-//                 botClientSocket.on('message', async (message) => {
-//                     const identityKey = uuidv4();
-//                     if (message.userId != bot.id) {
-//                         let user = await db.User.findOne({
-//                             attributes: ['id', 'gender', 'name'],
-//                             where: {
-//                                 id: message.userId
-//                             }
-//                         });
-//                         botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
-//                         let reply = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
-//                         botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
-//                         botClientSocket.emit("message", { messageContent: reply, chatId: message.chatId, identityKey });
-//                     }
-//                 })
-//             })
-//         } else botClientSocket = botClientSockets[bot.id];
-
-//         // console.log("the online users bot: ", onlineUsers[bot.id]);
-//         // console.log("the bot clientSocket is: ", botClientSocket);
-//         if (botClientSocket) {
-//             botClientSocket.emit('join-room', { gwant: reverseWanthave[0] });
-//             // console.log(`Bot ${bot.id} joined room ${randomRoomId}`);
-//         }else{
-//             if(bot.gender=="F"){
-//                 femaleBots.push(bot);
-//                 console.log("Female bot "+bot.name+" has been pushed to available female bots bcoz of falsy botClientScoket: ", femaleBots.length);
-//             }
-//             else if(bot.gender=='M') {
-//                 maleBots.push(bot);
-//                 console.log("Male bot "+bot.name+" has been pushed to available male bots because of falsy botClientSocket: ", male.length);
-//             }
-//         }
-//         // person[reverseWanthave] = person[reverseWanthave].filter(roomId => roomId !== randomRoomId);
-//     }
-// }
 
 let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRating, maWantRating, randomRoomId) => {
-    try{
+    try {
         await loadBotAccounts();
         if (singleRoomIds[randomRoomId]) {
             let bot;
@@ -359,17 +272,17 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                     console.log(`Bot ${bot.id} connected to the server`);
                     botClientSocket.on('user-left', async (data) => {
                         console.log("The bot with id: ", bot.id, " leaving the room");
-                        botClientSocket.emit('leave-room'); 
+                        botClientSocket.emit('leave-room');
                         // botClientSocket.disconnect();
                         const botSocketId = onlineUsers[bot.id];
                         const botSocket = io.sockets.sockets.get(botSocketId);
-                        if(bot.gender=="F"){
+                        if (bot.gender == "F") {
                             femaleBots.push(bot);
-                            console.log("Female bot "+bot.name+" has been pushed to available female bots: ", femaleBots.length);
+                            console.log("Female bot " + bot.name + " has been pushed to available female bots: ", femaleBots.length);
                         }
-                        else if(bot.gender=='M') {
+                        else if (bot.gender == 'M') {
                             maleBots.push(bot);
-                            console.log("Male bot "+bot.name+" has been pushed to available male bots: ", maleBots.length);
+                            console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
                         }
                         await botFunctions.clearBotReplies(botSocket.randomRoomId);
                     });
@@ -379,7 +292,7 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                         await botFunctions.botInit(bot.gender, stranger.gender, res.roomId, bot.rating);
                     })
                     botClientSocket.on('message', async (message) => {
-                        try{
+                        try {
                             const identityKey = uuidv4();
                             if (message.userId != bot.id) {
                                 let user = await db.User.findOne({
@@ -390,11 +303,12 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                                 });
                                 botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
                                 let reply = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
-                                botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
+                                // botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
                                 botClientSocket.emit("message", { messageContent: reply, chatId: message.chatId, identityKey });
                             }
 
-                        }catch(error){
+                        } catch (error) {
+                            console.log("The error is: ", error);
                             socket.emit('error', {
                                 response: {
                                     data: {
@@ -407,26 +321,26 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                     })
                 })
             } else botClientSocket = botClientSockets[bot.id];
-    
+
             // console.log("the online users bot: ", onlineUsers[bot.id]);
             // console.log("the bot clientSocket is: ", botClientSocket);
             if (botClientSocket) {
                 botClientSocket.emit('join-room', { gwant: strangerGender, miRating: 0, maRating: 5 });
                 // console.log(`Bot ${bot.id} joined room ${randomRoomId}`);
-            }else{
-                if(bot.gender=="F"){
+            } else {
+                if (bot.gender == "F") {
                     femaleBots.push(bot);
-                    console.log("Female bot "+bot.name+" has been pushed to available female bots bcoz of falsy botClientScoket: ", femaleBots.length);
+                    console.log("Female bot " + bot.name + " has been pushed to available female bots bcoz of falsy botClientScoket: ", femaleBots.length);
                 }
-                else if(bot.gender=='M') {
+                else if (bot.gender == 'M') {
                     maleBots.push(bot);
-                    console.log("Male bot "+bot.name+" has been pushed to available male bots because of falsy botClientSocket: ", maleBots.length);
+                    console.log("Male bot " + bot.name + " has been pushed to available male bots because of falsy botClientSocket: ", maleBots.length);
                 }
             }
             // person[reverseWanthave] = person[reverseWanthave].filter(roomId => roomId !== randomRoomId);
         }
-        
-    }catch(error){
+
+    } catch (error) {
         socket.emit('error', {
             response: {
                 data: {
@@ -506,10 +420,10 @@ let randomConnect = (io) => {
                 console.log("Unable to connect normal chats with socket: ", error);
             });
             io.emit('online', socket.user.id);
-            socket.on('join-room', async ({ gwant, miRating=0, maRating=5 }) => {
+            socket.on('join-room', async ({ gwant, miRating = 0, maRating = 5 }) => {
                 console.log("\x1b[31m%s\x1b[0m", "reaching to join room");
                 try {
-                    if(miRating<0 || maRating>5 || miRating>maRating) throw new RequestError("Invalid preferred rating range", 400);
+                    if (miRating < 0 || maRating > 5 || miRating > maRating) throw new RequestError("Invalid preferred rating range", 400);
                     console.log("Request received for assigning to random room, ghave: ", socket.user.gender, "selfRating: ", socket.user.rating, " gwant: ", gwant, " miRating: ", miRating, " maRating: ", maRating);
                     let randomRoomId;
                     if (gwant === "M" || gwant === 'F') {
@@ -528,22 +442,22 @@ let randomConnect = (io) => {
                     }
                     // console.log("UsersTrie before: ", rcUsers.print());
                     rcUsers.print();
-                    if(!randomRoomId) randomRoomId = rcUsers.findMatch(io, socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, 0);
-                    if(!randomRoomId && socket.user.email.split('@')[1]!=='bot.com'){
+                    if (!randomRoomId) randomRoomId = rcUsers.findMatch(io, socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, 0);
+                    if (!randomRoomId && socket.user.email.split('@')[1] !== 'bot.com') {
                         randomRoomId = crypto.randomUUID();
                         rcUsers.insert([socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, randomRoomId]);
-                        if(!socket.user.isAdmin){
-                            setTimeout(async() => {
-                                try{
-                                    await connectBot(io, socket, socket.user.gender, gwant==="R"?"F":gwant, miRating, maRating, randomRoomId);
+                        if (!socket.user.isAdmin) {
+                            setTimeout(async () => {
+                                try {
+                                    await connectBot(io, socket, socket.user.gender, gwant === "R" ? "F" : gwant, miRating, maRating, randomRoomId);
 
-                                }catch(error){
+                                } catch (error) {
                                     throw new RequestError("No online users with given preferences, please broaden your preferences")
                                 }
                             }, 5000);
                         }
                     }
-                    
+
                     // console.log("UsersTrie After: ", rcUsers.print());
                     // let wantHave = gwant + 'W' + ghave;
                     // let revereseWantHave = ghave + 'W' + gwant;
@@ -613,6 +527,7 @@ let randomConnect = (io) => {
             });
             socket.on('leave-room', () => {
                 socket.leave(socket.randomRoomId);
+                if(socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
             })
 
@@ -624,6 +539,59 @@ let randomConnect = (io) => {
                         io.to(message.chatId).emit('message', { userId: socket.user.id, content: message.messageContent, chatId: message.chatId, identityKey: message.identityKey, createdAt });
                         createMessage(socket, message.chatId, message.messageContent, createdAt);
                     } else {
+                        if (!socket.randomRoomId) {
+                            throw new RequestError("An unexpected Error Occured", 500);
+                        }
+                        let isBotInRoom = false;
+                        const usersInRoom = io.sockets.adapter.rooms.get(socket.randomRoomId);
+                        console.log("The users in random room: ", usersInRoom.size);
+                        if (usersInRoom && usersInRoom.size === 2) {
+                            usersInRoom.forEach(async (socketId) => {
+                                const userSocket = io.sockets.sockets.get(socketId); // Get the socket instance
+                                if (userSocket && userSocket.user && userSocket.user.id) {
+                                    if (isBot[userSocket.user.id]) isBotInRoom = true;
+                                }
+
+                            });
+                        }
+                        if (isBotInRoom) {
+                            console.log("\x1b[33m%s\x1b[0m", "This room contains a bot user, hence doesn't storing the context, roomId: ", socket.randomRoomId);
+                        }
+                        if (isBotInRoom || process.env.CHAT_CONTEXT_TRIE_UPDATE === "true") {
+                            // let chatContextWaitForCompletion = await addJobAndWait('chatContextQueue', { message, isBotInRoom, socketRandomRoomId: socket.randomRoomId, socketUserId: socket.user.id });
+                            // console.log("The chat context job is: ", chatContextWaitForCompletion);
+                            // let chatContextJob = chatContextQueue.add('processChatContexts', { message, isBotInRoom, socketRandomRoomId: socket.randomRoomId, socketUserId: socket.user.id });
+                            let createChatContextConditionallyInTrie = async () => {
+                                let messageLabel = await botFunctions.gptMessageLabelling(message.messageContent);
+                                if (!messageLabel) {
+                                    return;
+                                }
+                                const chatContext = chatContexts[socket.randomRoomId];
+                                //M_greet|F_greet|M_confusion(Kya kru zindagi ka) #chatContext format
+                                // let strangerId = await redis.getData(`strangerId-${socket.randomRoomId}`);
+                                // if(!strangerId){
+                                //     strangerId = socket.user.id;
+                                //     await redis.setData(`strangerId-${socket.randomRoomId}`, strangerId);
+                                // }
+                                // console.log("The strangerId: ", strangerId, " The socket user id: ", socket.user.id);
+                                // console.log("the old chat context: ", chatContext);
+                                let chatTrie = new ChatTrie();
+                                if (chatContext && !isBotInRoom) chatTrie.storeReply(chatContext, message.messageContent);
+                                let newChatContext;
+                                if (chatContext) newChatContext = chatContext.split("(")[0] + "|" + ((socket.user.gender==="M") ? "M_" : "F_") + messageLabel + "(" + message.messageContent + ")";
+                                else newChatContext = ((socket.user.gender==="M") ? "M_" : "F_") + messageLabel + "(" + message.messageContent + ")";
+                                chatContexts[socket.randomRoomId] = newChatContext;
+                                // console.log("the new chat context is: ", newChatContext);
+                            }
+                            if(isBotInRoom){
+                                if(!isBot[socket.user.id]) socket.emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey });
+                                await createChatContextConditionallyInTrie();
+                                if(isBot[socket.user.id]) socket.to(socket.randomRoomId).emit('typing-status', { chatId: 0, isTyping: false, userId: socket.user.id });
+                            }else{
+                                createChatContextConditionallyInTrie();
+                            }
+
+                        }
                         console.log("the message is received and sent to the random-room: ", socket.randomRoomId, message.messageContent);
                         io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey });
                     }
@@ -669,9 +637,9 @@ let randomConnect = (io) => {
 
             socket.on('typing', (res) => {
                 if (res.chatId != 0) {
-                    socket.to(res.chatId).emit('typing-status', {...res, userId: socket.user.id});
+                    socket.to(res.chatId).emit('typing-status', { ...res, userId: socket.user.id });
                 } else {
-                    socket.to(socket.randomRoomId).emit('typing-status', {...res, userId: socket.user.id});
+                    socket.to(socket.randomRoomId).emit('typing-status', { ...res, userId: socket.user.id });
                 }
             })
 
@@ -704,6 +672,7 @@ let randomConnect = (io) => {
                 if (socket.user?.id && onlineUsers[socket.user.id]) {
                     delete onlineUsers[socket.user.id]; // Remove the user from onlineUsers map
                 }
+                if(socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
 
             })
         });
