@@ -1,49 +1,51 @@
 import ChatTrie from "./chatContext";
-import { match, similarityIndex } from "./functions"
+import { match, similarityIndex, sentenceMatchRatio, sleep } from "./functions"
 import axios from 'axios';
 import { chatContexts } from "./randomConnLogic";
+import { disconnectKeys, validLabels } from "./botUtils";
+import { v4 as uuidv4 } from 'uuid';
 
 let replies = {
     "hi": ["Hello", "Hi", "Hey", "Hi"],
     "hello": ["Hello", "Hi", "Hey", "Hi"],
     "hey": ["Hello", "Hi", "Hey", "Hi"],
-    "age": ['18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', 'wbu', "why do u wanna know?", "Why?", "kyu", "kyu apko kya krna", "old enough"],
+    "age": ['18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', 'wbu', "why do u wanna know?", "Why?", "kyu", "kyu apko kya krna", "old enough", "tum", "idk"],
     "How are you": ["I'm good, what about you", "I'm fine, wbu", "I'm great", "I'm doing well", "mein theek hu, aap batao", "theek hu", "tum kaise ho", "theek", "aap", "tum", "theek nahi hu"],
     "lund legi": [
         'Badtameez', "Aukat me reh", "Tameez se baat kar", "Besharam", "Chup reh", "Zyada hero mat ban",
-        "Ja apne ghar me bol", "Hadd hai", "Maaza aa raha hai?", "Dheere bol", "Tameez seekh", "Koi sharam hai?",
+        "Ja apne ghar me bol", "Hadd hai", "Maaza aa raha hai?", "Tameez seekh", "Koi sharam hai?",
         "Apni maa se pooch", "Bhai tu theek hai?", "Chal nikal", "Ja naap tol ke aa", "Itni hi shauk hai to google kar",
-        "Zindagi me kuch kaam dhanda hai?", "Abe chup!", "Maa baap ne yehi sikhaya?", "Respect karna seekh", 
-        "Jaa pehle dawai le aa", "Hadd hai besharmi ki", "Mujhe nahi, apne doston se pooch"
+        "Zindagi me kuch kaam dhanda hai?", "Abe chup!", "Maa baap ne yehi sikhaya?", "Respect karna seekh",
+        "Jaa pehle dawai le aa", "Hadd hai besharmi ki", "Mujhe nahi, apne doston se pooch", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "randi": [
         'Badtameez', "Besharam", "Apne ghar mein bolna yeh sab", "Chutiya", "Teri ma?", "Teri behen?",
-        "Aukat pata hai?", "Respect karna seekh", "Yeh sab idhar nahi chalega!", "Dheere bol!", "Apni izzat mat utaar",
+        "Aukat pata hai?", "Respect karna seekh", "Yeh sab idhar nahi chalega!", "Apni izzat mat utaar",
         "Tu to full gawar nikla", "Maa baap ka naam roshan kar raha hai?", "Mujhe nahi pata, apni behen se pooch",
         "Zyada over smart mat ban", "Chal, ab chup ho ja", "Apni zindagi pe focus kar", "Padhai likhai kar",
         "Respect dusron ka bhi karna seekh", "Yehi sikhaya tujhe?", "Tujhe seekhne ki zaroorat hai",
-        "Abe samajhdar ban!", "Tameez ka koi dose le le", "Hatt be, bawasir ho gaya kya?"
+        "Abe samajhdar ban!", "Tameez ka koi dose le le", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "bhosdike": [
         'Badtameez', 'Besharam', "Apne ghar mein bolna yeh sab", "Chutiya", "Maa baap ka naam roshan kar raha hai?",
         "Tujhe sharam nahi aati?", "Tameez se baat kar", "Bhad me ja!", "Ja apni behen ko bol", "Dimaag kharaab hai kya?",
         "Abe tu itna gira kyun?", "Koi tameez hai?", "Tu kuch aur nahi seekh sakta?", "Chup reh bhai", "Tu paagal hai kya?",
         "Ghar me bataya hai ye sab?", "Apni behen ko aise bulate ho?", "Mujhe nahi, tere ko doctor ki zaroorat hai",
-        "Itna frustrated kyun hai?", "Tu school gaya tha kabhi?", "Nalayak!", "Chal, ab chup ho ja", "Bas kar bhai, hadd hoti hai"
+        "Itna frustrated kyun hai?", "Tu school gaya tha kabhi?", "Nalayak!", "Chal, ab chup ho ja", "Bas kar bhai, hadd hoti hai", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "chutiya": [
         'Badtameez', 'Tu chutiya', 'Besharam', "Nikal yaha se", "Tere jese log society kharab karte hain",
         "Lafandar kahin ka!", "Nalayak!", "Padhai likhai karle!", "Apni life pe dhyan de", "Behan ka bhai hai tu?",
         "Shakal dekhi hai?", "Tu full gawar hai", "Abe gaali se kya milega?", "Bhaag yaha se", "Dimag kharab hai?",
         "Tujhse kuch nahi hoga", "Koi tameez hai?", "Jaa padhai kar", "Apne ghar walo se puch, tu chutiya hai",
-        "Sharam kar le thodi", "Padhai likhai ka kuch fayda utha le", "Abe sudhar ja", "Chal ja, hawa aane de"
+        "Sharam kar le thodi", "Padhai likhai ka kuch fayda utha le", "Abe sudhar ja", "Chal ja, hawa aane de", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "gandu": [
         'Badtameez', "Besharam", "Ja ja ghar ja", "Hadd hai", "Teri maa ne yehi sikhaya?", "Koi izzat hai?",
         "Bade aae gyaan dene wale!", "Chal nikal", "Ghar pe bol ye sab?", "Bheja kam karta hai?", "Tujhe sharam nahi aati?",
         "Apni maa se seekh tameez", "Chal apna kaam kar", "Tu to full useless hai", "Abe kuch kaam dhanda kar",
         "Tameez ka dose le le", "Bhai tu bawasir hai kya?", "Zindagi me kuch aur seekh le", "Shakal dekh pehle apni",
-        "Tujhe school bhejna chahiye", "Aukat pata hai?", "Duniya dekhi hai?", "Sudhar ja!"
+        "Tujhe school bhejna chahiye", "Aukat pata hai?", "Duniya dekhi hai?", "Sudhar ja!", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "mc": [
         'Madarchod', 'Hatt bhosdike', "Badtameez", "Apne ghar pe bol", "Chup reh", "Bakwaas band kar",
@@ -51,28 +53,326 @@ let replies = {
         "Apni behen ko madarchod bol ke dekho", "Bhai teri akal kahan hai?", "Abe full gawar hai kya?",
         "Tujhe seekhne ki zaroorat hai", "Bas kar bhai, hadd hoti hai", "Respect karna seekh",
         "Tere liye zindagi kya sirf gali hai?", "Dimag ka ilaaj kara le", "Abe sudhar ja",
-        "Tameez seekh le bhai", "Padhai likhai kar"
+        "Tameez seekh le bhai", "Padhai likhai kar", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "bc": [
         'Badtameez', "Teri behen ki chut", "Teri ma ki chut", "Tameez se baat kar", "Sharam kar", "Ja ghar pe bol",
         "Kaun sikhata hai tujhe yeh sab?", "Ma baap ka naam roshan mat kar", "Abe chup!", "Tameez naam ki cheez hai?",
         "Yehi sikhaya gaya tujhe?", "Chal sudhar ja", "Koi izzat hai ya nahi?", "Shakal dekh apni",
         "Gharwalo se pooch, izzat bachi hai?", "Tujhe full pagal khana bhejna chahiye", "Akal kahan hai?",
-        "Tujhe serious help ki zaroorat hai", "Bhaag yaha se", "Sharam kar le!"
+        "Tujhe serious help ki zaroorat hai", "Bhaag yaha se", "Sharam kar le!", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "loda": [
         'Badtameez', 'Kya hai yeh, bewakoof', 'Besharam', "Ja padhai likhai kar", "Lafandar!", "Sharam kar",
         "Ghar pe baat kar yeh sab?", "Tameez seekh", "Koi izzat hai?", "Tu bawasir hai kya?", "Kuch seekh le",
         "Abe sudhar ja", "Tujhe sharam nahi aati?", "Chal chup ho ja", "Ja, kuch productive kaam kar",
         "Respect karna seekh", "Teri maa teri izzat pe ro rahi hogi", "Yehi sikhaya tujhe?",
-        "Abe kuch aur bhi bol sakta hai?", "Dimag thikane pe hai?", "Apne maa baap ko proud kar!"
+        "Abe kuch aur bhi bol sakta hai?", "Dimag thikane pe hai?", "Apne maa baap ko proud kar!", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
     ],
     "lodu": [
-        'Badtameez', 'Tu lodu', "Bewakoof", "Kya ukhaad raha hai?", "Ja ghar ja", "Apni aukat dekh", 
+        'Badtameez', 'Tu lodu', "Bewakoof", "Kya ukhaad raha hai?", "Ja ghar ja", "Apni aukat dekh",
         "Dimag sahi hai?", "Tujhe padhai likhai ka shauk nahi hai?", "Apni life pe dhyan de", "Maa baap ko yaad kar",
-        "Bhai full nalayak hai tu", "Sharam kar!", "Tameez ka koi dose le le", "Abe sudhar ja", 
+        "Bhai full nalayak hai tu", "Sharam kar!", "Tameez ka koi dose le le", "Abe sudhar ja",
         "Jaa, tujhse nahi hoga", "Ja bhai, hawa aane de", "Zindagi me aur kuch nahi hai kya?", "Teri akal ghaas charne gayi?",
-        "Abe chup ho ja", "Chal sudhar ja!"
+        "Abe chup ho ja", "Chal sudhar ja!", "bhosdike", "madarchod", "behenkelode", "gandu", "chutiya", "lodu", "nikal lodu"
+    ],
+    "kahan se ho": [
+        "kya kroge jaan ke",
+        "earth se",
+        "india se",
+        "pata nahi",
+        "idk",
+        "kyu",
+        "why",
+        "pata nahi",
+        "Andhra Pradesh",
+        "Arunachal Pradesh",
+        "Assam",
+        "Bihar",
+        "Chhattisgarh",
+        "Goa",
+        "Gujarat",
+        "Haryana",
+        "Himachal Pradesh",
+        "Jharkhand",
+        "Karnataka",
+        "Kerala",
+        "Madhya Pradesh",
+        "Maharashtra",
+        "Manipur",
+        "Meghalaya",
+        "Mizoram",
+        "Nagaland",
+        "Odisha",
+        "Punjab",
+        "Rajasthan",
+        "Sikkim",
+        "Tamil Nadu",
+        "Telangana",
+        "Tripura",
+        "Uttar Pradesh",
+        "Uttarakhand",
+        "West Bengal",
+        "Andaman and Nicobar Islands",
+        "Chandigarh",
+        "Dadra and Nagar Haveli and Daman and Diu",
+        "Lakshadweep",
+        "Delhi",
+        "Puducherry",
+        "Jammu and Kashmir",
+        "Ladakh",
+        "Mumbai",
+        "Delhi",
+        "Bangalore",
+        "Hyderabad",
+        "Chennai",
+        "Kolkata",
+        "Pune",
+        "Jaipur",
+        "Ahmedabad",
+        "Lucknow",
+        "Surat",
+        "Kanpur",
+        "Nagpur",
+        "Indore",
+        "Thane",
+        "Bhopal",
+        "Visakhapatnam",
+        "Pimpri-Chinchwad",
+        "Patna",
+        "Vadodara",
+        "Ghaziabad",
+        "Ludhiana",
+        "Agra",
+        "Nashik",
+        "Ranchi",
+        "Meerut",
+        "Rajkot",
+        "Kozhikode",
+        "Varanasi",
+        "Srinagar",
+        "Aurangabad",
+        "Dhanbad",
+        "Amritsar",
+        "Allahabad",
+        "Gwalior",
+        "Jabalpur",
+        "Coimbatore",
+        "Vijayawada",
+        "Madurai",
+        "Guwahati",
+        "Chandigarh",
+        "Hubballi-Dharwad",
+        "Mysore",
+        "Thiruvananthapuram",
+        "Salem",
+        "Tiruchirappalli",
+        "Bareilly",
+        "Aligarh",
+        "Moradabad",
+        "Jodhpur",
+        "Raipur",
+        "Kota",
+        "Bhubaneswar",
+        "Jamshedpur",
+        "Bikaner",
+        "Dehradun",
+        "Noida",
+        "Faridabad",
+        "Gurgaon",
+        "Howrah",
+        "Solapur",
+        "Meerut",
+        "Bilaspur",
+        "Asansol",
+        "Durgapur",
+        "Gaya",
+        "Udaipur",
+        "Kollam",
+        "Siliguri",
+        "Shillong",
+        "Imphal",
+        "Aizawl",
+        "Kohima",
+        "Gangtok",
+        "Itanagar",
+        "Dispur",
+        "Panaji",
+        "Pondicherry",
+        "Port Blair",
+        "Kavaratti",
+        "Diu",
+        "Daman",
+        "Sambalpur",
+        "Cuttack",
+        "Warangal",
+        "Tirupati",
+        "Guntur",
+        "Thrissur",
+        "Erode",
+        "Nellore",
+        "Nanded",
+        "Malegaon",
+        "Karimnagar",
+        "Nizamabad",
+        "Bellary",
+        "Tumkur",
+        "Udupi",
+        "Kurnool",
+        "Shimla",
+        "Kangra",
+        "Solan",
+        "Palampur",
+        "Hamirpur",
+        "Manali",
+        "Mandi",
+        "Chamba",
+        "Dalhousie",
+        "Dharamshala",
+        "Nahan",
+        "Bilaspur",
+        "Kullu",
+        "Una",
+        "Raigarh",
+        "Sagar",
+        "Rewa",
+        "Satna",
+        "Ratlam",
+        "Sehore",
+        "Shivpuri",
+        "Vidisha",
+        "Balaghat",
+        "Hoshangabad",
+        "Chhindwara",
+        "Betul",
+        "Bhind",
+        "Datia",
+        "Dewas",
+        "Guna",
+        "Mandsaur",
+        "Neemuch",
+        "Raisen",
+        "Rajgarh",
+        "Seoni",
+        "Shahdol",
+        "Sidhi",
+        "Singrauli",
+        "Tikamgarh",
+        "Umaria",
+        "Barwani",
+        "Burhanpur",
+        "Chhatarpur",
+        "Dindori",
+        "Khandwa",
+        "Khargone",
+        "Mahidpur",
+        "Mandla",
+        "Morena",
+        "Narsinghpur",
+        "Panna",
+        "Shajapur",
+        "Sheopur",
+        "Vidisha",
+        "Balasore",
+        "Bargarh",
+        "Bhadrak",
+        "Boudh",
+        "Cuttack",
+        "Deogarh",
+        "Dhenkanal",
+        "Gajapati",
+        "Ganjam",
+        "Jagatsinghpur",
+        "Jajpur",
+        "Jharsuguda",
+        "Kalahandi",
+        "Kandhamal",
+        "Kendrapara",
+        "Kendujhar",
+        "Khordha",
+        "Koraput",
+        "Malkangiri",
+        "Mayurbhanj",
+        "Nabarangpur",
+        "Nayagarh",
+        "Nuapada",
+        "Puri",
+        "Rayagada",
+        "Sambalpur",
+        "Subarnapur",
+        "Sundargarh"
+    ],
+    "tumhara naam kya hai": [
+        "I don't know",
+        "idk",
+        "Kya kroge naam jaan kar",
+        "Kya kroge",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+    ],
+    "name": [
+        "I don't know",
+        "idk",
+        "Kya kroge naam jaan kar",
+        "Kya kroge",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+    ],
+    "what's ur name": [
+        "I don't know",
+        "idk",
+        "Kya kroge naam jaan kar",
+        "Kya kroge",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+    ],
+    "ur name": [
+        "I don't know",
+        "idk",
+        "Kya kroge naam jaan kar",
+        "Kya kroge",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
+        "SEND_REAL_NAME",
     ]
 }
 let MTM = {
@@ -189,39 +489,7 @@ let FTM = {
         "I am good, wbu?",
         "Bas kat rhi zindagi"
     ],
-    "tumhara naam kya hai": [
-        "I don't know",
-        "Naam mein kya rakha hai",
-        "Kya kroge naam jaan kar",
-        "Kya kroge",
-        "SEND_REAL_NAME",
-        "SEND_REAL_NAME",
-        "SEND_REAL_NAME",
-        "SEND_REAL_NAME",
-        "SEND_REAL_NAME",
-        "SEND_REAL_NAME",
-    ],
-    "kahan se ho": [
-        "kya kroge jaan ke",
-        "earth se",
-        "india se",
-        "pata nahi",
-        "idk",
-        "kyu",
-        "why",
-        "pata nahi",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION",
-        "SEND_REAL_LOCATION"
-    ],
-    "kya karte ho": [
+    "kya karti ho": [
         "Kuch nahi",
         "Ghar mein padi rehti hu",
         "Kya kroge jaan ke",
@@ -246,72 +514,68 @@ let FTM = {
     //     "Aapne suna? Ek banda gym gaya aur bola: 'Mujhe selfie leke nikalna hai!' 😂",
     //     "Teacher: Tumhara homework kahan hai? Baccha: Wo corona ke chakkar me quarantine ho gaya! 😅"
     // ],
-    "pizza pasand hai": [
-        "Utna kuch khaas nahi",
-        "Pizza sabse best cheez hai!",
-        "Pizza bina zindagi adhoori hai, hai na?",
-        "Mujhe pizza pasand hai, tumhe?"
-    ],
     // "kuch interesting batao": [
     //     "kya intersting batau",
     //     "Mere paas kuch interesting batane ko nahi hai",
     //     "Mujhe kuch interesting nahi pata",
     //     "Tum batao kuch interesting"
     // ],
-    "game khelte ho": [
-        "na",
-        "nahi",
-        "kabhi kabhi",
-        "pasand nahi mujhe games khelna",
-        "Mujhe zyada khelna nahi aata"
-    ],
 
     // प्रोत्साहन (Encouragement)
-    "dukhi hoon": [
-        "Kya hua",
-        "Tension mat lo, sab theek ho jayega.",
-    ],
-    "madad chahiye": [
-        "Sorry, i can't help you",
-        "kya madad chahiye",
-        "kya",
-        "nahi hogi madad"
-    ],
-    "motivate karo": [
-        "mein kya koi motivational speaker hu?"
-    ],
+    // "dukhi hoon": [
+    //     "Kya hua",
+    //     "Tension mat lo, sab theek ho jayega.",
+    // ],
+    // "madad chahiye": [
+    //     "Sorry, i can't help you",
+    //     "kya madad chahiye",
+    //     "kya",
+    //     "nahi hogi madad"
+    // ],
+    // "motivate karo": [
+    //     "mein kya koi motivational speaker hu?"
+    // ],
 
     // रोचक सवाल जवाब (Casual Questions and Fun)
-    "tum kaisi ho": ["Main ekdum first class hoon", "Main badhiya hoon, aap kaise ho?"],
-    "kya tumhe gussa aata hai": [
-        "shayad",
-        "pata nahi",
-        "mein toh shanti ki murat hu",
-        "sometimes"
-    ],
-    "tum kitni smart ho": [
-        "Tum bhi koshish kro, smart ban jaoge",
-        "woh kaise",
-        "thanks",
-        "thx",
-        "thank you"
-    ],
-    "tumhara dost kaun hai": [
-        "Koi nahi",
-        "Aap jaise log mere dost hain!"
-    ],
+    // "tum kaisi ho": ["Main ekdum first class hoon", "Main badhiya hoon, aap kaise ho?"],
+    // "kya tumhe gussa aata hai": [
+    //     "shayad",
+    //     "pata nahi",
+    //     "mein toh shanti ki murat hu",
+    //     "sometimes"
+    // ],
+    // "tum kitni smart ho": [
+    //     "Tum bhi koshish kro, smart ban jaoge",
+    //     "woh kaise",
+    //     "thanks",
+    //     "thx",
+    //     "thank you"
+    // ],
+    // "tumhara dost kaun hai": [
+    //     "Koi nahi",
+    //     "Aap jaise log mere dost hain!"
+    // ],
 
     // अलविदा (Goodbye)
     "bye": [
         "bye",
         "Bye, take care",
         "chalo theek hai bye",
-        "Bye bye, apna dhyan rakhna"
+        "Bye bye, apna dhyan rakhna",
+        "hm",
+        "bye",
+        "ok bye",
+        "ok",
+        "dekhte hai"
     ],
     "fir milenge": [
         "Let's hope so",
         "hm",
-        "nahi"
+        "nahi",
+        "bye",
+        "ok bye",
+        "ok",
+        "dekhte hai"
     ],
     "talk to you later": [
         "theek hai",
@@ -320,85 +584,42 @@ let FTM = {
     ]
 };
 
-let transformArray = (array) => {
-    let sampleWord = "a";
-    let lettersObj = {
-        0: 'a',
-        1: 'a',
-        2: 'b',
-        3: 'c',
-        4: 'd',
-        5: 'e',
-        6: 'f',
-        7: 'g',
-        8: 'h',
-        9: 'i',
-        10: 'j',
-        11: 'k',
-        12: 'l',
-        13: 'm',
-        14: 'n',
-        15: 'o',
-        16: 'p',
-        17: 'q',
-        18: 'r',
-        19: 's',
-        20: 't',
-        21: 'u',
-        22: 'v',
-        23: 'w',
-        24: 'x',
-        25: 'y',
-        26: 'z'
-    }
-    let transformedWord = "";
-    for (let el of array) {
-        let similarityRatio = similarityIndex(el, sampleWord);
-        transformedWord += lettersObj[Math.floor(similarityRatio * 26)];
-    }
-    return transformedWord;
-}
 
-let sentenceMatchRatio = (sentence, search) => {
-    sentence = sentence.toLowerCase();
-    search = search.toLowerCase();
-    if (sentence === search) return 1;
-    let absoluteSimilarityIndex = similarityIndex(sentence, search);
-    if (absoluteSimilarityIndex > process.env.MATCH_PERCENTAGE) return absoluteSimilarityIndex;
-    let sentenceArray = sentence.split(' ');
-    let searchArray = search.split(' ');
-    let similarityRatio = similarityIndex(transformArray(sentenceArray), transformArray(searchArray));
-    return Math.floor((absoluteSimilarityIndex + similarityRatio) / 2);
+let matchedReply = (input, selfGender, strangerGender) => {
+    console.log("The selfGender is: ", selfGender);
+    console.log("The strangerGender is: ", strangerGender);
+    let reply = "";
+    let maxMatch = 0;
+    let tempReplies = {};
+    let replyKey = "";
+    if (strangerGender === 'M' && selfGender === 'M') tempReplies = MTM;
+    else if (strangerGender === 'M' && selfGender === 'F') tempReplies = FTM;
+    else if (strangerGender === 'F' && selfGender === 'F') tempReplies = FTF;
+    else if (strangerGender === 'F' && selfGender === 'M') tempReplies = MTF;
+    for (let key in tempReplies) {
+        let matchRatio = sentenceMatchRatio(input, key);
+        if (matchRatio > maxMatch) {
+            maxMatch = matchRatio;
+            reply = tempReplies[key][0];
+            tempReplies[key].push(tempReplies[key].shift());
+            replyKey = key;
+            console.log("\x1b[35mThe key : \x1b[0m", key, "\x1b[35m and the reply: \x1b[0m", reply);
+        }
+    }
+    tempReplies = replies;
+    for (let key in tempReplies) {
+        let matchRatio = sentenceMatchRatio(input, key);
+        if (matchRatio > maxMatch) {
+            maxMatch = matchRatio;
+            reply = tempReplies[key][0];
+            tempReplies[key].push(tempReplies[key].shift());
+            replyKey = key;
+            console.log("\x1b[35mThe key : \x1b[0m", key, "\x1b[35m and the reply: \x1b[0m", reply);
+        }
+    }
+    if (maxMatch < process.env.MATCH_PERCENTAGE) return ["UNABLE_TO_PROCESS", "CONTINUE"];
+    return [reply, replyKey];
 }
-
-// let matchedReply = (input, selfGender, strangerGender) => {
-//     console.log("The selfGender is: ", selfGender);
-//     console.log("The strangerGender is: ", strangerGender);
-//     let reply = "";
-//     let maxMatch = 0;
-//     let tempReplies = {};
-//     if (strangerGender === 'M' && selfGender === 'M') tempReplies = MTM;
-//     else if (strangerGender === 'M' && selfGender === 'F') tempReplies = FTM;
-//     else if (strangerGender === 'F' && selfGender === 'F') tempReplies = FTF;
-//     else if (strangerGender === 'F' && selfGender === 'M') tempReplies = MTF;
-//     for (let key in tempReplies) {
-//         let matchRatio = sentenceMatchRatio(input, key);
-//         if (matchRatio > maxMatch) {
-//             maxMatch = matchRatio;
-//             reply = tempReplies[key][Math.floor(Math.random() * tempReplies[key].length)];
-//         }
-//     }
-//     tempReplies = replies;
-//     for (let key in tempReplies) {
-//         let matchRatio = sentenceMatchRatio(input, key);
-//         if (matchRatio > maxMatch) {
-//             maxMatch = matchRatio;
-//             reply = tempReplies[key][Math.floor(Math.random() * tempReplies[key].length)];
-//         }
-//     }
-//     if (maxMatch < process.env.MATCH_PERCENTAGE) return "UNABLE_TO_PROCESS";
-//     return reply;
-// }
 let matchedReplyAdvance = async (input, selfGender, strangerGender) => {
     let objName = eval(`${selfGender}T${strangerGender}`);
     let getSystemDefault = (objName) => {
@@ -456,7 +677,7 @@ let matchedReplyAdvance = async (input, selfGender, strangerGender) => {
 }
 
 let systemRoleObj = {};
-let gptPayloadObj = {};
+export let gptPayloadObj = {};
 
 export default {
     async botInit(selfGender, strangerGender, roomId, rating) {
@@ -481,25 +702,27 @@ export default {
         };
     },
     async botReply(input, selfGender, strangerGender, roomId, selfName) {
-        // let predefinedReply = matchedReply(input, selfGender, strangerGender);
         try {
-            let predefinedReply = "UNABLE_TO_PROCESS";
+            // let predefinedReply = "UNABLE_TO_PROCESS";
             // let predefinedReply = await matchedReplyAdvance(input, selfGender, strangerGender);
-            // if (predefinedReply === "SEND_REAL_NAME") {
-            //     predefinedReply = [selfName, selfName, selfName, 'My name is ' + selfName, 'I am ' + selfName, 'I am ' + selfName + ' and you?', "mera naam hai " + selfName][Math.floor(Math.random() * 4)];
-            // }
-            gptPayloadObj[roomId].messages.push({ role: "user", content: input });
+            let [predefinedReply, predefinedReplyKey] = matchedReply(input, selfGender, strangerGender);
+            console.log("The predefined reply: ", predefinedReply, " the predifined reply key: ", predefinedReplyKey);
+            if (disconnectKeys.includes(predefinedReplyKey)) return [predefinedReply, "DISCONNECT"]
+            if (predefinedReply === "SEND_REAL_NAME") {
+                predefinedReply = [selfName, selfName, selfName, 'My name is ' + selfName, 'I am ' + selfName, 'I am ' + selfName + ' and you?', "mera naam hai " + selfName][Math.floor(Math.random() * 7)];
+            }
+            // gptPayloadObj[roomId].messages.push({ role: "user", content: input });
             let reply = predefinedReply;
             if (predefinedReply === "UNABLE_TO_PROCESS") {
                 let chatTrie = new ChatTrie();
                 console.log("The chatcontexts is: ", chatContexts);
-                if(chatContexts[roomId]){
+                if (chatContexts[roomId]) {
                     console.log("The context for which searching is: ", chatContexts[roomId]);
                     reply = await chatTrie.getReply(chatContexts[roomId]);
                     console.log("\x1b[33mThe chatTries reply: \x1b[0m", reply);
                 }
                 let response;
-                if(!reply || reply==="UNABLE_TO_PROCESS"){
+                if (!reply || reply === "UNABLE_TO_PROCESS") {
                     response = await axios.post(process.env.GPT_URL, gptPayloadObj[roomId], {
                         headers: {
                             Authorization: `Bearer ${process.env.GPT_KEY}`,
@@ -510,9 +733,10 @@ export default {
                 }
             }
             gptPayloadObj[roomId].messages.push({ role: "assistant", content: reply });
-            return reply;
+            return [reply, "CONTINUE"];
 
         } catch (error) {
+            console.log("\x1b[31mThe error occured in calculating bot reply: \x1b[0m", error.message);
             throw new RequestError("Stranger left the chat");
         }
     },
@@ -527,27 +751,70 @@ export default {
             console.log("clear gptpayload for random roomId: ", roomId);
         }
     },
+
     async gptMessageLabelling(message) {
-        try {
-            const response = await axios.post(process.env.GPT_URL, {
-                model: "gpt-4",
-                messages: [
-                    { role: "system", content: `You have to label the message ${message} in a single word from the list ["greet","bye","thanks","apology","question","answer","agree","disagree","compliment","flirt","abuse","joke","anger","excitement","sadness","sarcasm","command","request","spam","nsfw","bot","confused","informative","casual","warning","threat","motivational","inspirational","story","fact","opinion","suggestion","announcement","reminder","update","news","gossip","criticism","praise","shoutout","report","clarification","whatsapp","emoji","meme","copypasta","technical","error","celebration","tease","provocation","persuasion","humor","challenge","doubt","request_help","offer_help","encouragement","support","taunt"]
-                    , for example if someone had sent hello then label it as greet, remember just simply give the response consisting of one word i.e., label from the given list` }, // System role
-                ],
-                temperature: 1
-            }, {
-                headers: {
-                    Authorization: `Bearer ${process.env.GPT_KEY}`,
-                    "Content-Type": "application/json"
+        async function askGpt(promptMessage) {
+            const response = await axios.post(
+                process.env.GPT_URL,
+                {
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "system",
+                            content: `Label the message "${promptMessage}" with exactly one word from the following list: ${JSON.stringify(
+                                validLabels
+                            )}. For example, if the message is "hello" then label it as "greet". Return only the one word.`
+                        }
+                    ],
+                    temperature: 1
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${process.env.GPT_KEY}`,
+                        "Content-Type": "application/json"
+                    }
                 }
-            });
-            let label = response.data.choices[0].message.content.toLowerCase();
-            if(typeof label !== "string") throw new RequestError("Gpt wasn't able to label messages correctly", label);
+            );
+            const label = response.data.choices[0].message.content.toLowerCase().trim();
+            return label;
+        }
+
+        try {
+            let label = await askGpt(message);
+            if (!validLabels.includes(label)) {
+                label = await askGpt(message);
+            }
+
+            if (!validLabels.includes(label)) {
+                throw new Error("GPT didn't return a valid one-word label.");
+            }
+
             return label;
         } catch (error) {
-            console.log("Error occured while labelling the message: ", message, error);
-            return null;
+            console.log("\x1b[31mError occurred while labelling the message:\x1b[0m", error);
+            return "convo";
+        }
+    },
+
+    async botSent(botMessageArray, botClientSocket, botGender, selfName) {
+        try {
+            for (let botMessage of botMessageArray) {
+                if (botMessage === "SEND_REAL_GENDER") botMessage = botGender;
+                else if (botMessage === "SEND_REAL_NAME") botMessage = [selfName, selfName, selfName, 'My name is ' + selfName, 'I am ' + selfName, 'I am ' + selfName + ' and you?', "mera naam hai " + selfName][Math.floor(Math.random() * 7)];
+                else if (botMessage === "SEND_REAL_AGE") botMessage = replies["age"][Math.floor(Math.random() * replies["age"].length - 8)];
+                await sleep(Math.floor(Math.random() * 500) + 500);
+                const botMessageSentDelay = (10000 * botMessage.length) / 60;
+                botClientSocket.emit('typing', { chatId: 0, isTyping: true });
+                await sleep(botMessageSentDelay);
+                botClientSocket.emit("message", {
+                    messageContent: botMessage,
+                    chatId: 0,
+                    identityKey: uuidv4()
+                });
+
+            }
+        } catch (error) {
+            console.log("An error occurred while sending bot messages:", error);
         }
     }
 }

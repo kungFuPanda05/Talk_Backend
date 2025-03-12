@@ -1,0 +1,8 @@
+{
+  "children": {
+    "M_greet(hi)": {
+      "children": {},
+      "reply": ["Hello", "Hi", "Hey", "Hi", "hy"]
+    }
+  }
+}

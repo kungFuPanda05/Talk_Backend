@@ -6,11 +6,14 @@ import { Op, where } from 'sequelize';
 import config from '../config';
 import JWT from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import botFunctions from './botFunctions';
+import botFunctions, { gptPayloadObj } from './botFunctions';
 import ChatTrie from './chatContext';
 import redis, { redisClient } from './redis';
 import { Queue } from 'bullmq';
 import addJobAndWait from './initQueue';
+import { botInitialMessages, lastMessageReceivedTimeByBot } from './botUtils';
+import { socketWrapper } from './socketUtils';
+import { weightedRandomChoice } from './functions';
 const ioClient = require('socket.io-client');
 // const chatContextQueue = new Queue("chatContextQueue", { connection: redisClient });
 
@@ -268,9 +271,9 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                 });
                 // console.log("the botSocketClient is: ", botClientSocket, token);
                 botClientSockets[bot.id] = botClientSocket
-                botClientSocket.on('connect', async () => {
+                botClientSocket.on('connect', socketWrapper(async () => {
                     console.log(`Bot ${bot.id} connected to the server`);
-                    botClientSocket.on('user-left', async (data) => {
+                    botClientSocket.on('user-left', socketWrapper(async (data) => {
                         console.log("The bot with id: ", bot.id, " leaving the room");
                         botClientSocket.emit('leave-room');
                         // botClientSocket.disconnect();
@@ -285,12 +288,14 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                             console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
                         }
                         await botFunctions.clearBotReplies(botSocket.randomRoomId);
-                    });
-                    botClientSocket.on('strangers-connected', async (res) => {
+                    }, socket));
+                    botClientSocket.on('strangers-connected', socketWrapper(async (res) => {
                         let users = res.users;
                         let stranger = users.find(user => user.id !== bot.id);
                         await botFunctions.botInit(bot.gender, stranger.gender, res.roomId, bot.rating);
-                    })
+                        let sendBotInitial = weightedRandomChoice(['SEND_INITIAL', 'DONT'], [0.4, 0.6]);
+                        if(sendBotInitial==="SEND_INITIAL") await botFunctions.botSent(botInitialMessages[Math.floor(Math.random() * botInitialMessages.length)], botClientSocket, bot.gender, bot.name);
+                    }, socket))
                     botClientSocket.on('message', async (message) => {
                         try {
                             const identityKey = uuidv4();
@@ -301,10 +306,78 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                                         id: message.userId
                                     }
                                 });
-                                botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
-                                let reply = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
-                                // botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
-                                botClientSocket.emit("message", { messageContent: reply, chatId: message.chatId, identityKey });
+                                gptPayloadObj[(message.randomRoomId || message.chatId)].messages.push({ role: "user", content: message.content });
+                                let botReplyDelay = Math.floor(Math.random() * (2000-700+1))+700;
+                                if(lastMessageReceivedTimeByBot[bot.id]){
+                                    let timeDifference = new Date() - lastMessageReceivedTimeByBot[bot.id].time;
+                                    if(timeDifference<botReplyDelay){
+                                        clearTimeout(lastMessageReceivedTimeByBot[bot.id].timeout);
+                                        console.log("\x1b[33m%s\x1b[0m", "The message receiving for bot id ", bot.id, " is cleared because of the quickness: ", timeDifference);
+                                    }
+                                }
+                                let replyStatus, leaveRoom;
+                                console.log("The chatContexts length: ", chatContexts[message.randomRoomId], chatContexts[message.randomRoomId]?.length);
+                                if(!chatContexts[message.randomRoomId] || chatContexts[message.randomRoomId].length<50){
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.5, 0.5]);
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.1, 0.9]);
+                                }else if(chatContexts[message.randomRoomId].length<100){
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.5, 0.5]);
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.2, 0.8]);
+                                }else if(chatContexts[message.randomRoomId].length<200){
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.6, 0.4]);
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.3, 0.7]);
+                                }else {
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.7, 0.3]);
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.4, 0.6]);
+                                }
+                                if(!chatContexts[message.randomRoomId]){ //if the conversation has not started yet then keep the bot leaving the room probability to be 50-50
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.5, 0.5]);
+                                }
+                                console.log("\x1b[35m%s\x1b[0m", "The reply status: ", replyStatus);
+                                if(replyStatus==="DONT") return;
+                                if(leaveRoom==="LEAVE" || (chatContexts[message.randomRoomId] && chatContexts[message.randomRoomId].length)>500){
+                                    setTimeout(socketWrapper(async () => {
+                                        botClientSocket.emit('leave-room');
+                                    }, socket), botReplyDelay);
+                                    return;
+                                }
+                                lastMessageReceivedTimeByBot[bot.id] = {time: new Date()}
+                                lastMessageReceivedTimeByBot[bot.id].timeout = setTimeout(socketWrapper(async () => {
+                                    botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
+                                    let [reply, status] = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
+                                    let botMessageSentDelay = (10000*(reply.length))/60; //took 10 seconds to write 60 characters
+                                    // botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
+                                    setTimeout(socketWrapper(async()=>{
+                                        let isInAppropriateMessage = reply.includes("INAPPROPRIATE");
+                                        if (isInAppropriateMessage) {
+                                            reply = reply.replace("INAPPROPRIATE", "").trim();
+                                        }                                
+                                        botClientSocket.emit("message", { messageContent: reply, chatId: message.chatId, identityKey });
+                                        if(status==="DISCONNECT" || isInAppropriateMessage){
+                                            // const delay = Math.floor(Math.random() * (4500 - 2500 + 1)) + 2500;
+                                            let delay = (5000*(reply.length))/75+Math.floor(Math.random() * (1500));
+                                            setTimeout(socketWrapper(async() => {
+                                                console.log("The bot with id: ", bot.id, " leaving the room because of disconnect status");
+                                                botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
+                                                botClientSocket.emit('leave-room');
+                                                // botClientSocket.disconnect();
+                                                const botSocketId = onlineUsers[bot.id];
+                                                const botSocket = io.sockets.sockets.get(botSocketId);
+                                                if (bot.gender == "F") {
+                                                    femaleBots.push(bot);
+                                                    console.log("Female bot " + bot.name + " has been pushed to available female bots: ", femaleBots.length);
+                                                }
+                                                else if (bot.gender == 'M') {
+                                                    maleBots.push(bot);
+                                                    console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
+                                                }
+                                                await botFunctions.clearBotReplies(botSocket.randomRoomId);
+                                            }, socket), delay);
+        
+                                        }
+
+                                    }, socket), botMessageSentDelay)
+                                }, socket), botReplyDelay);
                             }
 
                         } catch (error) {
@@ -319,7 +392,7 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                             });
                         }
                     })
-                })
+                }, socket))
             } else botClientSocket = botClientSockets[bot.id];
 
             // console.log("the online users bot: ", onlineUsers[bot.id]);
@@ -420,7 +493,7 @@ let randomConnect = (io) => {
                 console.log("Unable to connect normal chats with socket: ", error);
             });
             io.emit('online', socket.user.id);
-            socket.on('join-room', async ({ gwant, miRating = 0, maRating = 5 }) => {
+            socket.on('join-room', socketWrapper(async ({ gwant, miRating = 0, maRating = 5 }) => {
                 console.log("\x1b[31m%s\x1b[0m", "reaching to join room");
                 try {
                     if (miRating < 0 || maRating > 5 || miRating > maRating) throw new RequestError("Invalid preferred rating range", 400);
@@ -441,22 +514,26 @@ let randomConnect = (io) => {
                         // gwant = getOnlineUsers(io, socket.user.gender);
                     }
                     // console.log("UsersTrie before: ", rcUsers.print());
-                    rcUsers.print();
                     if (!randomRoomId) randomRoomId = rcUsers.findMatch(io, socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, 0);
                     if (!randomRoomId && socket.user.email.split('@')[1] !== 'bot.com') {
                         randomRoomId = crypto.randomUUID();
                         rcUsers.insert([socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, randomRoomId]);
                         if (!socket.user.isAdmin) {
-                            setTimeout(async () => {
+                            setTimeout(socketWrapper(async () => {
                                 try {
-                                    await connectBot(io, socket, socket.user.gender, gwant === "R" ? "F" : gwant, miRating, maRating, randomRoomId);
+                                    if(process.env.CONNECT_BOT === "true") {
+                                        await connectBot(io, socket, socket.user.gender, gwant === "R" ? "F" : gwant, miRating, maRating, randomRoomId);
+                                    }else{
+                                        throw new RequestError("No online users with given preferences, please broaden your preferences")
+                                    }
 
                                 } catch (error) {
                                     throw new RequestError("No online users with given preferences, please broaden your preferences")
                                 }
-                            }, 5000);
+                            }, socket), 5000);
                         }
                     }
+                    rcUsers.print();
 
                     // console.log("UsersTrie After: ", rcUsers.print());
                     // let wantHave = gwant + 'W' + ghave;
@@ -524,12 +601,13 @@ let randomConnect = (io) => {
                         }
                     });
                 }
-            });
-            socket.on('leave-room', () => {
+            }, socket));
+            socket.on('leave-room', socketWrapper(() => {
                 socket.leave(socket.randomRoomId);
-                if(socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
+                if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
+                console.log("Clearing chat context for room: ", socket.randomRoomId);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
-            })
+            }, socket))
 
             socket.on('message', async (message) => {
                 try {
@@ -562,8 +640,10 @@ let randomConnect = (io) => {
                             // console.log("The chat context job is: ", chatContextWaitForCompletion);
                             // let chatContextJob = chatContextQueue.add('processChatContexts', { message, isBotInRoom, socketRandomRoomId: socket.randomRoomId, socketUserId: socket.user.id });
                             let createChatContextConditionallyInTrie = async () => {
-                                let messageLabel = await botFunctions.gptMessageLabelling(message.messageContent);
+                                let messageLabel = null;
+                                messageLabel = await botFunctions.gptMessageLabelling(message.messageContent);
                                 if (!messageLabel) {
+                                    // messageLabel = "test";
                                     return;
                                 }
                                 const chatContext = chatContexts[socket.randomRoomId];
@@ -578,16 +658,16 @@ let randomConnect = (io) => {
                                 let chatTrie = new ChatTrie();
                                 if (chatContext && !isBotInRoom) chatTrie.storeReply(chatContext, message.messageContent);
                                 let newChatContext;
-                                if (chatContext) newChatContext = chatContext.split("(")[0] + "|" + ((socket.user.gender==="M") ? "M_" : "F_") + messageLabel + "(" + message.messageContent + ")";
-                                else newChatContext = ((socket.user.gender==="M") ? "M_" : "F_") + messageLabel + "(" + message.messageContent + ")";
+                                if (chatContext) newChatContext = chatContext.split("(")[0] + "|" + ((socket.user.gender === "M") ? "M_" : "F_") + messageLabel + "(" + message.messageContent + ")";
+                                else newChatContext = ((socket.user.gender === "M") ? "M_" : "F_") + messageLabel + "(" + message.messageContent + ")";
                                 chatContexts[socket.randomRoomId] = newChatContext;
                                 // console.log("the new chat context is: ", newChatContext);
                             }
-                            if(isBotInRoom){
-                                if(!isBot[socket.user.id]) socket.emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey });
+                            if (isBotInRoom) {
+                                if (!isBot[socket.user.id]) socket.emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey });
                                 await createChatContextConditionallyInTrie();
-                                if(isBot[socket.user.id]) socket.to(socket.randomRoomId).emit('typing-status', { chatId: 0, isTyping: false, userId: socket.user.id });
-                            }else{
+                                if (isBot[socket.user.id]) socket.to(socket.randomRoomId).emit('typing-status', { chatId: 0, isTyping: false, userId: socket.user.id });
+                            } else {
                                 createChatContextConditionallyInTrie();
                             }
 
@@ -672,7 +752,7 @@ let randomConnect = (io) => {
                 if (socket.user?.id && onlineUsers[socket.user.id]) {
                     delete onlineUsers[socket.user.id]; // Remove the user from onlineUsers map
                 }
-                if(socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
+                if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
 
             })
         });
