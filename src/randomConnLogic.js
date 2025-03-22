@@ -6,7 +6,7 @@ import { Op, where } from 'sequelize';
 import config from '../config';
 import JWT from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import botFunctions, { gptPayloadObj } from './botFunctions';
+import botFunctions, { gptPayloadObj } from './botFunctions.js';
 import ChatTrie from './chatContext';
 import redis, { redisClient } from './redis';
 import { Queue } from 'bullmq';
@@ -317,17 +317,17 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                                 }
                                 let replyStatus, leaveRoom;
                                 console.log("The chatContexts length: ", chatContexts[message.randomRoomId], chatContexts[message.randomRoomId]?.length);
-                                if(!chatContexts[message.randomRoomId] || chatContexts[message.randomRoomId].length<50){
-                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.5, 0.5]);
-                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.1, 0.9]);
-                                }else if(chatContexts[message.randomRoomId].length<100){
-                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.5, 0.5]);
-                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.2, 0.8]);
-                                }else if(chatContexts[message.randomRoomId].length<200){
+                                if(!chatContexts[message.randomRoomId] || chatContexts[message.randomRoomId].length<25){
                                     replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.6, 0.4]);
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.1, 0.9]);
+                                }else if(chatContexts[message.randomRoomId].length<50){
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.7, 0.3]);
+                                    leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.2, 0.8]);
+                                }else if(chatContexts[message.randomRoomId].length<100){
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.8, 0.2]);
                                     leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.3, 0.7]);
                                 }else {
-                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.7, 0.3]);
+                                    replyStatus = weightedRandomChoice(['REPLY', 'DONT'], [0.9, 0.1]);
                                     leaveRoom = weightedRandomChoice(['LEAVE', 'DONT'], [0.4, 0.6]);
                                 }
                                 if(!chatContexts[message.randomRoomId]){ //if the conversation has not started yet then keep the bot leaving the room probability to be 50-50
@@ -345,7 +345,7 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                                 lastMessageReceivedTimeByBot[bot.id].timeout = setTimeout(socketWrapper(async () => {
                                     botClientSocket.emit('typing', { chatId: message.chatId, isTyping: true });
                                     let [reply, status] = await botFunctions.botReply(message.content, bot.gender, user.gender, (message.randomRoomId || message.chatId), bot.name);
-                                    let botMessageSentDelay = (10000*(reply.length))/60; //took 10 seconds to write 60 characters
+                                    let botMessageSentDelay = (10000*(reply.length))/70; //took 10 seconds to write 70 characters
                                     // botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
                                     setTimeout(socketWrapper(async()=>{
                                         let isInAppropriateMessage = reply.includes("INAPPROPRIATE");
@@ -641,7 +641,9 @@ let randomConnect = (io) => {
                             // let chatContextJob = chatContextQueue.add('processChatContexts', { message, isBotInRoom, socketRandomRoomId: socket.randomRoomId, socketUserId: socket.user.id });
                             let createChatContextConditionallyInTrie = async () => {
                                 let messageLabel = null;
-                                messageLabel = await botFunctions.gptMessageLabelling(message.messageContent);
+                                // messageLabel = await botFunctions.gptMessageLabelling(message.messageContent);
+                                messageLabel = await botFunctions.labelMessage(message.messageContent);
+                                console.log("The classified message ------------->>>>>>>>>>>>>>>>>>>>>>", messageLabel);
                                 if (!messageLabel) {
                                     // messageLabel = "test";
                                     return;

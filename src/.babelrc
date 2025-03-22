@@ -1,5 +1,19 @@
 {
-    "plugins": ["@babel/plugin-transform-runtime"],
-    "presets": ["@babel/preset-env"],
-    "ignore": ["node_modules", "src/public"]
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "modules": false
+      }
+    ]
+  ],
+  "plugins": [
+    "@babel/plugin-transform-runtime",
+    "@babel/plugin-syntax-dynamic-import"
+  ],
+  "ignore": [
+    "node_modules",
+    "src/public",
+    "./xenovawrapper.js"
+  ]
 }
