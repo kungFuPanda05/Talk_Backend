@@ -2,7 +2,7 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Messages', {
       id: {
         type: Sequelize.INTEGER,
@@ -16,22 +16,26 @@ module.exports = {
       sentBy: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references:{
+        references: {
           model: 'Users',
           key: 'id',
         },
-          onUpdate: 'CASCADE',
-          onDelete: 'CASCADE'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       chatId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references:{
+        references: {
           model: 'Chats',
           key: 'id',
         },
-          onUpdate: 'CASCADE',
-          onDelete: 'CASCADE'
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      type: {
+        type: Sequelize.ENUM('text', 'image', 'video', 'audio'),
+        defaultValue: 'text'
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -47,7 +51,7 @@ module.exports = {
     })
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Messages');
   }
 };

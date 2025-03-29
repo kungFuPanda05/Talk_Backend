@@ -3,7 +3,7 @@ import db from "../models";
 import { onlineUsers } from "./randomConnLogic";
 import io from "./index";
 
-export const createMessage = async (socket, chatId, content, createdAt) => {
+export const createMessage = async (socket, chatId, content, createdAt, type="text") => {
     let selfUserId = socket.user.id;
     let selfId, friendId;
     try {
@@ -31,7 +31,7 @@ export const createMessage = async (socket, chatId, content, createdAt) => {
         }
 
         const message = await db.Message.create({
-            chatId, content, sentBy: selfUserId, createdAt, updatedAt: createdAt
+            chatId, content, sentBy: selfUserId, createdAt, updatedAt: createdAt, type
         })
 
         db.Chat.update({

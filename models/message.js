@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes)=>{
     const Message = sequelize.define('Message', {
         content: DataTypes.TEXT,
         sentBy: DataTypes.INTEGER,
-        chatId: DataTypes.INTEGER
+        chatId: DataTypes.INTEGER,
+        type: DataTypes.ENUM('text', 'image', 'video', 'audio'),
     },{
         timestamps: true,
         paranoid: true

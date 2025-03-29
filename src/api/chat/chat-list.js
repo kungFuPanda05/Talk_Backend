@@ -26,7 +26,11 @@ let controller = async (req, res, next)=>{
                     },
                     {
                         model: db.Message,
-                        attributes: ['content', 'sentBy', 'createdAt'],
+                        attributes: [
+                            [db.Sequelize.literal(`CASE WHEN type = 'image' THEN 'Photo' ELSE content END`), 'content'],
+                            'sentBy',
+                            'createdAt'
+                        ],
                         as: 'Last_Message',  
                         required: false,    
                     }

@@ -31,7 +31,7 @@ let controller = async (req, res, next)=>{
         let totalMessages = 0;
         if(process.env.ULTRA_SEARCH==="true" && search){
             messages = await db.Message.findAll({
-                attributes: ['id', 'content', ['sentBy', 'userId'], 'createdAt'],
+                attributes: ['id', 'content', ['sentBy', 'userId'], 'createdAt', 'type'],
                 where: { chatId },
                 order: [['createdAt', 'DESC']],
             });
@@ -42,7 +42,7 @@ let controller = async (req, res, next)=>{
         }else{
             [messages, totalMessages] = await Promise.all([
                 db.Message.findAll({
-                    attributes: ['id', 'content', ['sentBy', 'userId'], 'createdAt'],
+                    attributes: ['id', 'content', ['sentBy', 'userId'], 'createdAt', 'type'],
                     where: { 
                         chatId,
                         content: {

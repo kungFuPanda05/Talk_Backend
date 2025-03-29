@@ -612,7 +612,6 @@ let randomConnect = (io) => {
             socket.on('message', async (message) => {
                 try {
                     if (message.chatId != 0) {
-                        console.log("the message is received and sent to the chat: ", message);
                         let createdAt = new Date();
                         io.to(message.chatId).emit('message', { userId: socket.user.id, content: message.messageContent, chatId: message.chatId, identityKey: message.identityKey, createdAt });
                         createMessage(socket, message.chatId, message.messageContent, createdAt);
@@ -675,7 +674,7 @@ let randomConnect = (io) => {
 
                         }
                         console.log("the message is received and sent to the random-room: ", socket.randomRoomId, message.messageContent);
-                        io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey });
+                        io.to(socket.randomRoomId).emit('message', { userId: socket.user.id, content: message.messageContent, randomRoomId: socket.randomRoomId, chatId: 0, createdAt: new Date(), identityKey: message.identityKey, type: message.type });
                     }
 
                 } catch (error) {

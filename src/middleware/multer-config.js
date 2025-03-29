@@ -21,4 +21,16 @@ const storage = multer.diskStorage({
   }
 });
 
+const sendImageStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const logosPath = path.join(__dirname, '..', 'public', 'sendImages');
+    cb(null, logosPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
 export const logoUpload = multer({ storage: storage, fileFilter: imageFilter });
+export const sendImageUpload = multer({ storage: sendImageStorage, fileFilter: imageFilter });

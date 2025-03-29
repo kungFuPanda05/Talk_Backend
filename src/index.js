@@ -35,9 +35,11 @@ app.use(passport.initialize());
 app.use(expressSanitizer());
 app.use('/uploads', express.static(path.join(__dirname, 'public'), {
     setHeaders: (res, path) => {
-        res.set('Content-Type', 'image/jpeg'); // Set appropriate MIME type
+        res.set('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+        // res.set('Access-Control-Allow-Credentials', 'true');
     }
 }));
+
 
 app.use((req, res, next) => {
     console.log(`\x1b[31m${req.method}\x1b[0m \x1b[32m${req.url}\x1b[0m`);
