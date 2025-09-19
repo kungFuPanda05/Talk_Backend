@@ -25,12 +25,10 @@ let controller = async (req, res, next)=>{
         let {identityKey} = req.query;
         const pic = req.file? `uploads/sendImages/${req.file.filename}` : null;
         if(!pic) throw new RequestError("No Image found", 400);
-        const socket = io.sockets.sockets.get(onlineUsers[req.user.id]);
+        if(!onlineUsers[req.user.id]?.length) throw new RequestError("User is not online", 400);
+        const socket = io.sockets.sockets.get(onlineUsers[req.user.id][0]);
         let createdAt = new Date();
-        if(onlineUsers[req.user.id]) await createMessage(socket, chatId, pic, createdAt, "image");
-        else{
-            throw new RequestError("User is offline", 400);
-        }
+        await createMessage(socket, chatId, pic, createdAt, "image");
 
         io.to(chatId).emit('message', { userId: req.user.id, content: pic, chatId, identityKey, createdAt, type: "image" });
         res.status(200).json({

@@ -1,3 +1,5 @@
+const {Heap} = require('heap-js');
+
 var longestCommonSubsequence = function (text1, text2) {
     let m = text1.length;
     let n = text2.length;
@@ -146,4 +148,52 @@ export const weightedRandomChoice = (items, probabilities) => {
 
 export const sleep=(ms)=> {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export const searchByName = (complete, offset, pageSize, search) => {
+    try {
+        const heap = new Heap((a, b) => a.score - b.score);
+        let absoluteOne = [];
+        let records = [];
+        let count = 0;
+        const subStringSet = new Set();
+        if (!search) {
+            records = complete.slice(offset, offset + pageSize);
+            count = complete.length;
+        } else {
+            complete.forEach(record => {
+                const score = similarityIndex(record.name, search);
+                if (score == 1) absoluteOne.push(record);
+                if (record.name.toLowerCase().includes(search.toLowerCase())) {
+                    subStringSet.add(record.id);
+                }
+                if (score < process.env.FUZZY_SEARCH_THRESHOLD) {
+                    return;
+                }
+                if (heap.size() < pageSize) {
+                    heap.push({ ...record, score });
+                } else if (score > heap.peek().score) {
+                    heap.pop();
+                    heap.push({ ...record, score });
+                }
+            });
+            if (absoluteOne.length > 0) {
+                records = absoluteOne;
+            } else {
+                let heapRecords = heap.toArray().sort((a, b) => b.score - a.score);
+                let setRecords = complete.filter(record => subStringSet.has(record.id));
+                const merged = [...heapRecords, ...setRecords].reduce((acc, curr) => {
+                    if (!acc.some(item => item.id === curr.id)) acc.push(curr);
+                    return acc;
+                }, []);
+                records = merged;
+            }
+            count = records.length;
+            records = records.slice(offset, offset + pageSize);
+        }
+        return [records, count]
+    } catch (error) {
+        console.error('Error in searchByName:', error);
+        throw new RequestError('Search operation failed');
+    }
 }

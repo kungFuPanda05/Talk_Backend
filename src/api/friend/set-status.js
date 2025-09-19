@@ -68,20 +68,23 @@ let controller = async (req, res, next) => {
                 chatId: chat.id,
                 userId: strangerId
             });
-            const userSocketId = onlineUsers[req.user.id];
-            const strangerSocketId = onlineUsers[strangerId];
+            const userSocketIds = onlineUsers[req.user.id];
+            const strangerSocketIds = onlineUsers[strangerId];
+            for (let userSocketId of userSocketIds) {
+                for (let strangerSocketId of strangerSocketIds) {
+                    // Add the users' sockets to the chat room
+                    if (userSocketId) {
+                        io.to(userSocketId).socketsJoin(chat.id); // Add req.user.id's socket to the room
+                    }
+                    if (strangerSocketId) {
+                        io.to(strangerSocketId).socketsJoin(chat.id); // Add strangerId's socket to the room
+                    }
 
-            // Add the users' sockets to the chat room
-            if (userSocketId) {
-                io.to(userSocketId).socketsJoin(chat.id); // Add req.user.id's socket to the room
-            }
-            if (strangerSocketId) {
-                io.to(strangerSocketId).socketsJoin(chat.id); // Add strangerId's socket to the room
-            }
-
-            if (strangerSocketId) {
-                io.to(strangerSocketId).emit('receive-request-accept', true);
-                console.log(`Sent 'receive-request-accept' to stranger ID: ${strangerId}`);
+                    if (strangerSocketId) {
+                        io.to(strangerSocketId).emit('receive-request-accept', true);
+                        console.log(`Sent 'receive-request-accept' to stranger ID: ${strangerId}`);
+                    }
+                }
             }
         }
         res.status(200).json({

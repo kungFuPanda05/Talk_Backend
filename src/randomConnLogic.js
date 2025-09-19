@@ -18,6 +18,8 @@ import adminPortal from './adminPortal.js';
 const ioClient = require('socket.io-client');
 // const chatContextQueue = new Queue("chatContextQueue", { connection: redisClient });
 
+export let onlineUsers = {}; //this is going to be an object of array(the array contains the socket ids of same user across different browsers)
+
 let singleRoomIds = {};
 class Node {
     constructor(value) {
@@ -276,17 +278,19 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                         console.log("The bot with id: ", bot.id, " leaving the room");
                         botClientSocket.emit('leave-room');
                         // botClientSocket.disconnect();
-                        const botSocketId = onlineUsers[bot.id];
-                        const botSocket = io.sockets.sockets.get(botSocketId);
-                        if (bot.gender == "F") {
-                            femaleBots.push(bot);
-                            console.log("Female bot " + bot.name + " has been pushed to available female bots: ", femaleBots.length);
+                        const botSocketIds = onlineUsers[bot.id];
+                        for(let botSocketId of botSocketIds){
+                            const botSocket = io.sockets.sockets.get(botSocketId);
+                            if (bot.gender == "F") {
+                                femaleBots.push(bot);
+                                console.log("Female bot " + bot.name + " has been pushed to available female bots: ", femaleBots.length);
+                            }
+                            else if (bot.gender == 'M') {
+                                maleBots.push(bot);
+                                console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
+                            }
+                            await botFunctions.clearBotReplies(botSocket.randomRoomId);
                         }
-                        else if (bot.gender == 'M') {
-                            maleBots.push(bot);
-                            console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
-                        }
-                        await botFunctions.clearBotReplies(botSocket.randomRoomId);
                     }, socket));
                     botClientSocket.on('strangers-connected', socketWrapper(async (res) => {
                         let users = res.users;
@@ -360,17 +364,19 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                                                 botClientSocket.emit('typing', { chatId: message.chatId, isTyping: false });
                                                 botClientSocket.emit('leave-room');
                                                 // botClientSocket.disconnect();
-                                                const botSocketId = onlineUsers[bot.id];
-                                                const botSocket = io.sockets.sockets.get(botSocketId);
-                                                if (bot.gender == "F") {
-                                                    femaleBots.push(bot);
-                                                    console.log("Female bot " + bot.name + " has been pushed to available female bots: ", femaleBots.length);
+                                                const botSocketIds = onlineUsers[bot.id];
+                                                for(let botSocketId of botSocketIds){
+                                                    const botSocket = io.sockets.sockets.get(botSocketId);
+                                                    if (bot.gender == "F") {
+                                                        femaleBots.push(bot);
+                                                        console.log("Female bot " + bot.name + " has been pushed to available female bots: ", femaleBots.length);
+                                                    }
+                                                    else if (bot.gender == 'M') {
+                                                        maleBots.push(bot);
+                                                        console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
+                                                    }
+                                                    await botFunctions.clearBotReplies(botSocket.randomRoomId);
                                                 }
-                                                else if (bot.gender == 'M') {
-                                                    maleBots.push(bot);
-                                                    console.log("Male bot " + bot.name + " has been pushed to available male bots: ", maleBots.length);
-                                                }
-                                                await botFunctions.clearBotReplies(botSocket.randomRoomId);
                                             }, socket), delay);
         
                                         }
@@ -426,8 +432,6 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
 
 let rcUsers = new UserTrie(); //Ready to chat users
 
-export let onlineUsers = {};
-
 let randomConnect = (io) => {
     try {
         io.on("connection", (socket) => {
@@ -437,7 +441,12 @@ let randomConnect = (io) => {
                 adminPortal.triggerEvent("total-users");
                 adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
             }
-            onlineUsers[socket.user.id] = socket.id;
+            if(onlineUsers[socket.user.id]?.length && !onlineUsers[socket.user.id].includes(socket.id)){
+                onlineUsers[socket.user.id].push(socket.id);
+            }else{
+                onlineUsers[socket.user.id] = [socket.id];
+            }
+            console.log("the online users after connecting the user is: ", onlineUsers);
             db.User.update(
                 {
                     Online: db.sequelize.literal('Online + 1'), // Correct syntax
@@ -711,18 +720,20 @@ let randomConnect = (io) => {
             // });
             socket.on('send-request-accept-later', (friendId) => {
                 // Find the socket ID of the friend
-                const friendSocketId = onlineUsers[friendId];
-                console.log("reached to send-request-accept-friend", friendSocketId);
+                const friendSocketIds = onlineUsers[friendId];
+                console.log("reached to send-request-accept-friend", friendSocketIds);
 
-                if (friendSocketId) {
-                    // Emit the message to the specific friend
-                    io.to(friendSocketId).emit(
-                        'receive-request-accept-later',
-                        `${socket.user.name} has accepted your friend request`
-                    );
-                    console.log(`Message sent to ${friendId}: ${socket.user.name} has accepted your friend request`);
-                } else {
-                    console.log(`User with ID ${friendId} is not online`);
+                for(let friendSocketId of friendSocketIds){
+                    if (friendSocketId) {
+                        // Emit the message to the specific friend
+                        io.to(friendSocketId).emit(
+                            'receive-request-accept-later',
+                            `${socket.user.name} has accepted your friend request`
+                        );
+                        console.log(`Message sent to ${friendId}: ${socket.user.name} has accepted your friend request`);
+                    } else {
+                        console.log(`User with ID ${friendId} is not online`);
+                    }
                 }
             });
 
@@ -760,9 +771,13 @@ let randomConnect = (io) => {
                 }
                 if (onlineCount.Online == 1) io.emit('offline', socket.user.id);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
-                if (socket.user?.id && onlineUsers[socket.user.id]) {
+                if (socket.user?.id && onlineUsers[socket.user.id]?.length) {
                     console.log("gonna remove the socket.user.id: ------------------------------", socket.user.id);
-                    delete onlineUsers[socket.user.id]; // Remove the user from onlineUsers map
+                    onlineUsers[socket.user.id] = onlineUsers[socket.user.id].filter(id => id !== socket.id);
+                    if (onlineUsers[socket.user.id].length === 0){
+                        delete onlineUsers[socket.user.id]; // Remove the user from onlineUsers map
+                    }
+                    console.log("the online users afret disconnect: ", onlineUsers);
                 }
                 if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
                 await adminPortal.triggerEvent("total-users");

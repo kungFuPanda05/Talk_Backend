@@ -71,17 +71,18 @@ export const createMessage = async (socket, chatId, content, createdAt, type="te
                 }
             });
             socket.leave(chatId);
-            if(onlineUsers[friendId]){
-                const friendSocket = io.sockets.sockets.get(onlineUsers[friendId]); // Get the socket by its ID
-                if (friendSocket) {
-                    friendSocket.leave(chatId); // Make the friendSocket leave the specified room
-                    console.log(`friendSocket ${onlineUsers[friendId]} has left room ${chatId}`);
-                } else {
-                    console.log(`friendSocket with ID ${onlineUsers[friendId]} not found`);
+            if(onlineUsers[friendId]?.length){
+                const friendSocketIds = onlineUsers[friendId];
+                for(let friendScoektId of friendSocketIds){
+                    const friendSocket = io.sockets.sockets.get(friendScoektId); // Get the socket by its ID
+                    if (friendSocket) {
+                        friendSocket.leave(chatId); // Make the friendSocket leave the specified room
+                        console.log(`friendSocket ${onlineUsers[friendId]} has left room ${chatId}`);
+                    } else {
+                        console.log(`friendSocket with ID ${onlineUsers[friendId]} not found`);
+                    }
                 }
             }
         }
     }
-
-
 }
