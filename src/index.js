@@ -14,6 +14,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import path from 'path';
 import { redisClient } from './redis';
+import adminPortal from './adminPortal';
 // import './worker'
 
 
@@ -22,8 +23,12 @@ const app = express();
 
 app.options('*', cors()); // Enable CORS preflight for all routes
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000"
-}))
+    origin: [
+        process.env.FRONTEND_URL || "http://localhost:3000",
+        process.env.ADMIN_FRONTEND_URL || "http://localhost:3001"
+    ]
+}));
+
 
 
 app.use(express.json());
@@ -62,7 +67,7 @@ app.use((error, req, res, next) => {
 })
 
 db.sequelize.authenticate()
-    .then(() => {
+    .then(async() => {
         console.log("Database is working correctly");
     })
     .catch((err) => {
@@ -83,13 +88,21 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 const io = require('socket.io')(server, {
     pingTimeout: 60000,
     cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: [
+            process.env.FRONTEND_URL || "http://localhost:3000",
+            process.env.ADMIN_FRONTEND_URL || "http://localhost:4000"
+        ],
     },
 });
+
 
 require("./worker");
 
 io.use(socketStrategy);
 randomConnect(io);
+setTimeout(() => {
+    adminPortal.triggerEvent('total-users');
+
+}, 5000);
 
 export default io;

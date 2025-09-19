@@ -14,6 +14,7 @@ import addJobAndWait from './initQueue';
 import { botInitialMessages, lastMessageReceivedTimeByBot } from './botUtils';
 import { socketWrapper } from './socketUtils';
 import { weightedRandomChoice } from './functions';
+import adminPortal from './adminPortal.js';
 const ioClient = require('socket.io-client');
 // const chatContextQueue = new Queue("chatContextQueue", { connection: redisClient });
 
@@ -145,6 +146,30 @@ class UserTrie {
         }
         return randomRoomId;
     }
+
+    singleRooms(node = this.root, io, level = 0) {
+        if (level === 4) {
+            const roomNode = node.children.get("roomId");
+            if (!roomNode) return 0;
+    
+            // Remove stale room IDs
+            while (
+                roomNode.value.length > 0 &&
+                !io.sockets?.adapter?.rooms?.get(roomNode.value[0])?.size
+            ) {
+                roomNode.value.shift();
+            }
+    
+            return roomNode.value.length;
+        }
+    
+        let ans = 0;
+        for (const child of Array.from(node.children.values())) {
+            ans += this.singleRooms(child, io, level + 1);
+        }
+        return ans;
+    }    
+
     // isRoomAvaialble(randomRoomId, level, node=this.root){
     //     if(level==4){
 
@@ -168,32 +193,6 @@ const JWTSign = (user, date) => {
     );
 }
 
-let person = {
-    MWM: [],
-    MWF: [],
-    FWF: [],
-    FWM: []
-}
-
-function getOnlineUsers(io, selfGender) {
-    let maleCount = 0;
-    let femaleCount = 0;
-    let onlineCount = 0;
-    // Loop through all connected sockets
-    io.sockets.sockets.forEach((socket) => {
-        if (socket.user && socket.user.gender) {
-            // if(!(socket.randomRoomId)){
-            //     if(socket.user
-            //         .gender==='M') maleCount++;
-            //     else femaleCount++;
-            // } 
-            onlineCount++;
-        }
-    });
-    if (selfGender === "M") return person.MWM.length <= person.MWF.length ? "M" : "F";
-    else return person.FWM.length <= person.FWF.length ? "M" : "F";
-
-}
 let femaleBots = [];
 let maleBots = [];
 let isBot = {};
@@ -433,6 +432,11 @@ let randomConnect = (io) => {
     try {
         io.on("connection", (socket) => {
             console.log("The socket connection has been established");
+            if(socket.user.email === process.env.ADMIN_EMAIL_ID){
+                console.log("\x1b[32m%s\x1b[0m", "The admin is connected");
+                adminPortal.triggerEvent("total-users");
+                adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
+            }
             onlineUsers[socket.user.id] = socket.id;
             db.User.update(
                 {
@@ -492,6 +496,7 @@ let randomConnect = (io) => {
             }).catch(error => {
                 console.log("Unable to connect normal chats with socket: ", error);
             });
+            adminPortal.triggerEvent("total-users");
             io.emit('online', socket.user.id);
             socket.on('join-room', socketWrapper(async ({ gwant, miRating = 0, maRating = 5 }) => {
                 console.log("\x1b[31m%s\x1b[0m", "reaching to join room");
@@ -524,10 +529,12 @@ let randomConnect = (io) => {
                                     if(process.env.CONNECT_BOT === "true") {
                                         await connectBot(io, socket, socket.user.gender, gwant === "R" ? "F" : gwant, miRating, maRating, randomRoomId);
                                     }else{
-                                        throw new RequestError("No online users with given preferences, please broaden your preferences")
+                                        // throw new RequestError("No online users with given preferences, please broaden your preferences")
                                     }
 
                                 } catch (error) {
+                                    socket.leave(randomRoomId);
+                                    await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
                                     throw new RequestError("No online users with given preferences, please broaden your preferences")
                                 }
                             }, socket), 5000);
@@ -557,7 +564,9 @@ let randomConnect = (io) => {
 
                     // console.log("\x1b[33m%s\x1b[0m", "person(after):", person);
                     socket.join(randomRoomId);
+                    await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
                     socket.randomRoomId = randomRoomId;
+                    socket.randomRoomJoinedAt = new Date();
                     console.log("The socket randomRoomId ", randomRoomId);
                     console.log("Rooms this socket has joined", socket.rooms);
 
@@ -602,11 +611,12 @@ let randomConnect = (io) => {
                     });
                 }
             }, socket));
-            socket.on('leave-room', socketWrapper(() => {
+            socket.on('leave-room', socketWrapper(async() => {
                 socket.leave(socket.randomRoomId);
                 if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
                 console.log("Clearing chat context for room: ", socket.randomRoomId);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
+                await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
             }, socket))
 
             socket.on('message', async (message) => {
@@ -617,7 +627,7 @@ let randomConnect = (io) => {
                         createMessage(socket, message.chatId, message.messageContent, createdAt);
                     } else {
                         if (!socket.randomRoomId) {
-                            throw new RequestError("An unexpected Error Occured", 500);
+                            throw new RequestError("This chat room doesn't exist anymore", 409);
                         }
                         let isBotInRoom = false;
                         const usersInRoom = io.sockets.adapter.rooms.get(socket.randomRoomId);
@@ -746,14 +756,17 @@ let randomConnect = (io) => {
                             },
                         }
                     );
-
+                    
                 }
                 if (onlineCount.Online == 1) io.emit('offline', socket.user.id);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
                 if (socket.user?.id && onlineUsers[socket.user.id]) {
+                    console.log("gonna remove the socket.user.id: ------------------------------", socket.user.id);
                     delete onlineUsers[socket.user.id]; // Remove the user from onlineUsers map
                 }
                 if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
+                await adminPortal.triggerEvent("total-users");
+                await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
 
             })
         });

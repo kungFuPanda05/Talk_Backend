@@ -22,7 +22,7 @@ redisClient.ping()
 // ────────────────────────────────────────────────────────────────────────────────
 
 // ✅ Set data in Redis with optional expiration
-export const setData = async (key, value, expiry = null) => {
+export const setData = async (key, value, expiry = 24*60*60) => {
   try {
     const stringValue = typeof value === "object" ? JSON.stringify(value) : value;
     if (expiry) {
@@ -92,6 +92,15 @@ export const flushAll = async () => {
   }
 };
 
+export const wrapper = async(key, cb, ttl) => {
+  let data = await getData(key);
+  if (data===null || data===undefined) {
+    data = await cb();
+    await setData(key, data, ttl);
+  }
+  return data;
+}
+
 // Export all functions
 export default {
   setData,
@@ -100,4 +109,5 @@ export default {
   isKeyExists,
   getKeys,
   flushAll,
+  wrapper
 };
