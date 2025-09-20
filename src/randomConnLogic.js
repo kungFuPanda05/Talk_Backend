@@ -15,6 +15,7 @@ import { botInitialMessages, lastMessageReceivedTimeByBot } from './botUtils';
 import { socketWrapper } from './socketUtils';
 import { weightedRandomChoice } from './functions';
 import adminPortal from './adminPortal.js';
+import topWaitingUsers from './topWaitingUsers.js';
 const ioClient = require('socket.io-client');
 // const chatContextQueue = new Queue("chatContextQueue", { connection: redisClient });
 
@@ -440,6 +441,7 @@ let randomConnect = (io) => {
                 console.log("\x1b[32m%s\x1b[0m", "The admin is connected");
                 adminPortal.triggerEvent("total-users");
                 adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
+                adminPortal.triggerEvent("top-waiting-users");
             }
             if(onlineUsers[socket.user.id]?.length && !onlineUsers[socket.user.id].includes(socket.id)){
                 onlineUsers[socket.user.id].push(socket.id);
@@ -529,7 +531,11 @@ let randomConnect = (io) => {
                     }
                     // console.log("UsersTrie before: ", rcUsers.print());
                     if (!randomRoomId) randomRoomId = rcUsers.findMatch(io, socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, 0);
-                    if (!randomRoomId && socket.user.email.split('@')[1] !== 'bot.com') {
+                    if(randomRoomId){
+                        const socket = io.sockets.sockets.get([...io.sockets.adapter.rooms.get(randomRoomId)][0]);
+                        topWaitingUsers.remove(socket.user);
+                        adminPortal.triggerEvent("top-waiting-users");                        
+                    }else if (!randomRoomId && socket.user.email.split('@')[1] !== 'bot.com') {
                         randomRoomId = crypto.randomUUID();
                         rcUsers.insert([socket.user.gender, socket.user.rating, gwant, `${miRating}_${maRating}`, randomRoomId]);
                         if (!socket.user.isAdmin) {
@@ -548,31 +554,12 @@ let randomConnect = (io) => {
                                 }
                             }, socket), 5000);
                         }
+                        topWaitingUsers.insert({...socket.user, wantGender: gwant, miWantRating: miRating, maWantRating: maRating});
                     }
                     rcUsers.print();
 
-                    // console.log("UsersTrie After: ", rcUsers.print());
-                    // let wantHave = gwant + 'W' + ghave;
-                    // let revereseWantHave = ghave + 'W' + gwant;
-                    // console.log("\x1b[33m%s\x1b[0m", "person(before):", person);
-                    // console.log("\x1b[34m%s\x1b[0m", "wanthave and reversewanthave:", wantHave, revereseWantHave);
-
-                    // while (person[wantHave].length > 0 && !(io.sockets?.adapter?.rooms?.get(person[wantHave][0])?.size)) person[wantHave].shift(); //clearing the rooms which doesn't exists in socket anymore
-                    // if (person[wantHave].length > 0) {
-                    //     randomRoomId = person[wantHave][0];
-                    //     person[wantHave].shift();
-                    // } else {
-                    //     randomRoomId = crypto.randomUUID();
-                    //     person[revereseWantHave].push(randomRoomId);
-                    //     if(!socket.user.isAdmin){
-                    //         setTimeout(() => {
-                    //             connectBot(io, revereseWantHave, randomRoomId);
-                    //         }, 5000);
-                    //     }
-                    // }
-
-                    // console.log("\x1b[33m%s\x1b[0m", "person(after):", person);
                     socket.join(randomRoomId);
+                    adminPortal.triggerEvent("top-waiting-users");
                     await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
                     socket.randomRoomId = randomRoomId;
                     socket.randomRoomJoinedAt = new Date();
@@ -780,8 +767,10 @@ let randomConnect = (io) => {
                     console.log("the online users afret disconnect: ", onlineUsers);
                 }
                 if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
+                topWaitingUsers.remove(socket.user);
                 await adminPortal.triggerEvent("total-users");
                 await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
+                await adminPortal.triggerEvent("top-waiting-users");
 
             })
         });

@@ -2,6 +2,7 @@ import db from "../models";
 import io from "./index";
 import { onlineUsers } from "./randomConnLogic";
 import redis from "./redis";
+import topWaitingUsers from "./topWaitingUsers";
 //currently i am calculating things via just traversing everytime it want but this approach isn't scalable when number of concurrent nline users increases it will become a bottleneck so u just need to change that thing by maintaining counter for verything and proper counter increment and decrement, i guess upto 1000 concurrent users there won't be any issue
 export default {
     async triggerEvent(eventName, data) {
@@ -75,6 +76,9 @@ export default {
                 }
 
                 socket.emit('random-rooms', { randomRooms: { activeRooms: randomRoomsCount - data, totalRooms: randomRoomsCount }, roomUsersObj });
+            }else if(eventName === "top-waiting-users"){
+                let {topWaitingFemaleUsers, topWaitingMaleUsers} = topWaitingUsers.get();
+                socket.emit('top-waiting-users', {topWaitingFemaleUsers, topWaitingMaleUsers});
             }
         }
 

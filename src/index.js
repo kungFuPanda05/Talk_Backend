@@ -100,9 +100,5 @@ require("./worker");
 
 io.use(socketStrategy);
 randomConnect(io);
-setTimeout(() => {
-    adminPortal.triggerEvent('total-users');
-
-}, 5000);
 
 export default io;
