@@ -23,8 +23,8 @@ export const createMessage = async (socket, chatId, content, createdAt, type="te
             }
 
             const [isBlockedByYou, isBlocked] = await Promise.all([
-                db.Friend_Request.count({ where: { from: selfUserId, to: friendId, status: "blocked" } }),
                 db.Friend_Request.count({ where: { from: friendId, to: selfUserId, status: "blocked" } }),
+                db.Friend_Request.count({ where: { from: selfUserId, to: friendId, status: "blocked" } }),
             ]);
             if (isBlockedByYou) throw new RequestError("You had blocked this user, to send the message unblock", 409);
             if (isBlocked) throw new RequestError("The other user has blocked you");

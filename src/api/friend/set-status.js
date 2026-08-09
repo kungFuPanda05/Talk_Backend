@@ -22,40 +22,22 @@ let controller = async (req, res, next) => {
         let { status, strangerId } = req.body;
         if (status) status += "ed";
         let friend_request;
-        if (status === "blocked") {
-            friend_request = await db.Friend_Request.findOne({
-                where: {
-                    from: req.user.id,
-                    to: strangerId
-                }
-            });
-            if (!friend_request) {
-                friend_request = (await dbFunctions.createUnique(db.Friend_Request, {
-                    status,
-                    from: req.user.id,
-                    to: strangerId
-                }))[0];
-            } else {
-                friend_request = await db.Friend_Request.update({
-                    status,
-                }, {
-                    where: {
-                        from: req.user.id,
-                        to: strangerId
-                    }
-                });
+        let friendRequest = await db.Friend_Request.findOne({
+            where: {
+                from: strangerId,
+                to: req.user.id,
             }
-        } else {
-            friend_request = await db.Friend_Request.update({
+        });
+        if(!friendRequest){
+            [friendRequest] = await dbFunctions.createUnique(db.Friend_Request, {
                 status,
-            }, {
-                where: {
-                    from: strangerId,
-                    to: req.user.id
-                }
+                from: strangerId,
+                to: req.user.id,
             });
-
+        }else{
+            friendRequest.update({status});
         }
+
         if (status === "accepted") {
             let chat = await db.Chat.create({
                 chatName: req.user.id + "_" + strangerId,

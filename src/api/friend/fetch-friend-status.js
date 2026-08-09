@@ -38,7 +38,8 @@ let controller = async (req, res, next)=>{
                 isReqSent: (reverseFriendReq?.status==="pending")? true: false,
                 isReqRecieved: (friendRequest?.status==="pending")? true: false,
                 isAccept: (friendRequest?.status==="accepted")?true:false,
-                isReject: (friendRequest?.status==="rejected")?true:false
+                isReject: (friendRequest?.status==="rejected")?true:false,
+                isFriend: (friendRequest?.status==="accepted" || reverseFriendReq?.status==="accepted")?true:false,
             }
         });
     }catch(error){

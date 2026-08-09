@@ -1,6 +1,7 @@
 {
   "scripts": {
     "start": "nodemon src/index.js --exec babel-node --presets @babel/env",
+    "login-all-users": "nodemon script/loginAllUsers.js --exec babel-node --presets @babel/env",
     "build": "babel src --out-dir dist --copy-files",
     "start:prod": "node dist/index.js"
   },
@@ -28,6 +29,7 @@
     "email-validator": "^2.0.4",
     "express": "^4.18.3",
     "express-sanitizer": "^1.0.6",
+    "heap-js": "^2.6.0",
     "helmet": "^8.0.0",
     "ioredis": "^5.5.0",
     "joi": "^17.13.3",
@@ -38,6 +40,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "puppeteer": "^24.22.0",
     "sequelize": "^6.37.1",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.8.1",

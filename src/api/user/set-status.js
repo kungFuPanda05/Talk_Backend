@@ -14,8 +14,8 @@ let controller = async (req, res, next)=>{
         await db.Friend_Request.update({
             status,
             where: {
-                from: req.user.id,
-                to: strangerId
+                from: strangerId,
+                to: req.user.id
             }
         })
         res.status(200).json({

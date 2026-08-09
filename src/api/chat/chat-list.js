@@ -38,7 +38,7 @@ let controller = async (req, res, next)=>{
                 order: [[db.Sequelize.literal(`(SELECT m.createdAt FROM Messages AS m WHERE m.id = Chat.lastMessageId)`), 'DESC']],
 
             });
-            
+            console.log("the chat befre: ", JSON.parse(JSON.stringify(chats)));
             chats = await Promise.all(chats.map(async (chat) => {
                 // Convert `chat` to a plain object to allow modification
                 chat = chat.get({ plain: true });
@@ -60,6 +60,14 @@ let controller = async (req, res, next)=>{
                                 from: req.user.id
                             },
                             required: false
+                        }, {
+                            model: db.Friend_Request,
+                            as: 'SentRequests',
+                            attributes: ['status'],
+                            where: {
+                                to: req.user.id
+                            },
+                            required: false
                         }],
                         where: {
                             id: {
@@ -67,10 +75,14 @@ let controller = async (req, res, next)=>{
                             }
                         }
                     });
+                    console.log("the user i have found is: ", user?.toJSON());
                     chat.chatName = user?.name ?? chat.chatName;
                     chat.friendId = user.id;
-                    chat.friendOnlineStatus = user.Online>0?true: false
-                    chat.status = (user.ReceivedRequests && user.ReceivedRequests[0] && user.ReceivedRequests[0].status) || "accepted"
+                    chat.friendOnlineStatus = user.Online>0?true: false;
+                    let isAccepted = (user.ReceivedRequests && user.ReceivedRequests[0]?.status==="accepted") || (user.SentRequests && user.SentRequests[0]?.status==="accepted");
+                    let isBlockedByYou = user.SentRequests && user.SentRequests[0]?.status==="blocked";
+                    let isBlocked = user.ReceivedRequests && user.ReceivedRequests[0]?.status==="blocked";
+                    chat.status = isAccepted?"accepted": "rejec"
                 }
                 if(chat.Last_Message?.content) chat.Last_Message.content = (chat.Last_Message.content.length>50)?(chat.Last_Message.content.slice(0, 50).trim()+"..."):(chat.Last_Message.content)
                 chat.newMessageCount = chat.ChatUsers[0]?.newMessageCount ?? 0;

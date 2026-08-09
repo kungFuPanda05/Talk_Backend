@@ -14,8 +14,8 @@ let controller = async (req, res, next)=>{
         const {selfId, strangerId} = req.body;
         let isBlocked = await db.Friend_Request.findOne({
             where: {
-                from: strangerId,
-                to: req.user.id,
+                from: req.user.id,
+                to: strangerId,
                 status: 'blocked'
             },
             raw: true
