@@ -5,14 +5,16 @@
     "login-all-users": "nodemon script/loginAllUsers.js --exec babel-node --presets @babel/env",
     "build": "babel src --out-dir dist/src --copy-files --config-file ./src/.babelrc && babel models --out-dir dist/models --copy-files --config-file ./src/.babelrc && babel config --out-dir dist/config --copy-files --config-file ./src/.babelrc",
     "start:prod": "node dist/src/index.js",
-    "db:bootstrap": "node scripts/bootstrap-production.js"
+    "db:bootstrap": "node scripts/bootstrap-production.js",
+    "smoke:guest-coins": "babel-node scripts/smoke-guest-coins.js --presets @babel/env"
   },
   "engines": {
     "node": ">=18"
   },
   "nodemonConfig": {
     "ignore": [
-      "trie-backup.json"
+      "trie-backup.json",
+      "dist/**"
     ]
   },
   "devDependencies": {
@@ -21,12 +23,12 @@
     "@babel/node": "^7.23.9",
     "@babel/plugin-transform-runtime": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "puppeteer": "^24.22.0"
   },
   "dependencies": {
-    "@xenova/transformers": "^2.17.2",
     "axios": "^1.7.9",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "bullmq": "^5.41.7",
     "compression": "^1.7.5",
     "cors": "^2.8.5",
@@ -45,11 +47,22 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "puppeteer": "^24.22.0",
     "sequelize": "^6.37.1",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.8.1",
     "stack-trace": "^1.0.0-pre2",
     "uuid": "^11.0.3"
+  },
+  "overrides": {
+    "sequelize": {
+      "uuid": "11.1.1"
+    }
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "core-js@3.36.0": true,
+    "fsevents@2.3.3": true,
+    "msgpackr-extract@3.0.4": true,
+    "puppeteer@24.43.1": true
   }
 }

@@ -1,5 +1,6 @@
-const DEFAULT_FRONTEND_ORIGINS = ["http://localhost:3000"];
-const DEFAULT_ADMIN_ORIGINS = ["http://localhost:3001"];
+const DEFAULT_FRONTEND_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
+const DEFAULT_ADMIN_ORIGINS = ["http://localhost:3001", "http://127.0.0.1:3001"];
+const DEFAULT_MOBILE_ORIGINS = ["http://localhost:8081", "http://127.0.0.1:8081"];
 
 const normalizeOrigin = (value) => {
     const trimmedValue = value.trim();
@@ -26,8 +27,14 @@ const originsFromEnvironment = (value, defaults) => {
 };
 
 export const allowedOrigins = Array.from(new Set([
-    ...originsFromEnvironment(process.env.FRONTEND_URL, DEFAULT_FRONTEND_ORIGINS),
-    ...originsFromEnvironment(process.env.ADMIN_FRONTEND_URL, DEFAULT_ADMIN_ORIGINS),
+    ...originsFromEnvironment(process.env.FRONTEND_URL, []),
+    ...originsFromEnvironment(process.env.ADMIN_FRONTEND_URL, []),
+    ...originsFromEnvironment(process.env.MOBILE_FRONTEND_URL, []),
+    ...(process.env.NODE_ENV === 'production' ? [] : [
+        ...DEFAULT_FRONTEND_ORIGINS,
+        ...DEFAULT_ADMIN_ORIGINS,
+        ...DEFAULT_MOBILE_ORIGINS,
+    ]),
 ]));
 
 export const isAllowedOrigin = (origin) => {

@@ -19,7 +19,7 @@ let controller = async (req, res, next) => {
                 include: [{
                     model: db.User,
                     as: 'SentRequests',
-                    attributes: ['id', 'name', 'Online']
+                    attributes: ['id', 'name', 'Online', 'pic']
                 }],
                 where: {
                     to: userId,
@@ -38,7 +38,7 @@ let controller = async (req, res, next) => {
                     include: [{
                         model: db.User,
                         as: 'SentRequests',
-                        attributes: ['id', 'name', 'Online'],
+                        attributes: ['id', 'name', 'Online', 'pic'],
                         where: {
                             name: {
                                 [Op.like]: `%${search}%`
@@ -87,4 +87,3 @@ let controller = async (req, res, next) => {
 const apiRouter = express.Router();
 apiRouter.route('/').get(jwtStrategy, controller);
 export default apiRouter;
-

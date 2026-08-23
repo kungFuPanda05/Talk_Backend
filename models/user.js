@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes)=>{
         },
         password: DataTypes.STRING,
         isAdmin: DataTypes.BOOLEAN,
+        isGuest: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
         pic: DataTypes.STRING,
         gender: DataTypes.ENUM('M', 'F'),
         Online: DataTypes.INTEGER,
@@ -37,6 +42,8 @@ module.exports = (sequelize, DataTypes)=>{
         models.User.hasMany(models.Friend_Request, { as: 'ReceivedRequests', foreignKey: 'to' });
         models.User.hasMany(models.Report, { as: 'From', foreignKey: 'from' });
         models.User.hasMany(models.Report, { as: 'To', foreignKey: 'to' });
+        models.User.hasMany(models.Coin_Request, { as: 'CoinRequests', foreignKey: 'userId' });
+        models.User.hasMany(models.Coin_Request, { as: 'ReviewedCoinRequests', foreignKey: 'reviewedBy' });
         models.User.hasMany(models.User_Package, {foreignKey: "userId"});
         
 

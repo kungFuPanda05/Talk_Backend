@@ -3,8 +3,7 @@ import socketStrategy from './strategy/auth/socketauth';
 import db from '../models';
 import { createMessage } from './service';
 import { Op, where } from 'sequelize';
-import config from '../config';
-import JWT from 'jsonwebtoken';
+import { signAuthToken } from './authToken';
 import { v4 as uuidv4 } from 'uuid';
 import botFunctions, { gptPayloadObj } from './botFunctions.js';
 import ChatTrie from './chatContext';
@@ -179,20 +178,6 @@ class UserTrie {
 
 export let chatContexts = {}; //"M_greet|F_greet|M_abuse(madarchod)"
 
-const JWTSign = (user, date) => {
-    return JWT.sign(
-        {
-            iss: config.app.name,
-            sub: user.id,
-            iat: date.getTime()
-        },
-        config.app.secret,
-        {
-            expiresIn: "30d"
-        }
-    );
-}
-
 let femaleBots = [];
 let maleBots = [];
 let isBot = {};
@@ -259,7 +244,7 @@ let connectBot = async (io, socket, strangerGender, strangerWantGender, miWantRa
                     id: bot.id
                 }
             })
-            const token = JWTSign(bot, new Date());
+            const token = signAuthToken(bot);
             let botClientSocket;
             if (!botClientSockets[bot.id]) {
                 console.log("reaching inside !onlineUsers[bot.id]: ");
@@ -509,8 +494,14 @@ let randomConnect = (io) => {
             socket.on('join-room', socketWrapper(async ({ gwant, miRating = 0, maRating = 5 }) => {
                 console.log("\x1b[31m%s\x1b[0m", "reaching to join room");
                 try {
+                    if (!["M", "F", "R"].includes(gwant)) throw new RequestError("Invalid gender preference", 400);
+                    miRating = Number(miRating);
+                    maRating = Number(maRating);
                     socket.hasPreference = gwant === "M" || gwant === "F";
-                    if (miRating < 0 || maRating > 5 || miRating > maRating) throw new RequestError("Invalid preferred rating range", 400);
+                    if (!Number.isFinite(miRating) || !Number.isFinite(maRating)
+                        || miRating < 0 || maRating > 5 || miRating > maRating) {
+                        throw new RequestError("Invalid preferred rating range", 400);
+                    }
                     console.log("Request received for assigning to random room, ghave: ", socket.user.gender, "selfRating: ", socket.user.rating, " gwant: ", gwant, " miRating: ", miRating, " maRating: ", maRating);
                     let randomRoomId;
                     if (socket.hasPreference) {
@@ -520,7 +511,9 @@ let randomConnect = (io) => {
                                 id: socket.user.id
                             }
                         })
-                        if (user.coins <= 0 && !isBot[user.id]) throw new RequestError("You don't have sufficient coins");
+                        if (user.coins < 10 && !isBot[user.id]) {
+                            throw new RequestError("You need 10 coins for this preference", 409);
+                        }
                     } else {
                         //do something in this case
                         randomRoomId = rcUsers.getRandomStranger(io, socket.user.gender, socket.user.rating, 0);
@@ -570,7 +563,7 @@ let randomConnect = (io) => {
                         // Notify both users in the room that they are connected
                         const users = [];
 
-                        usersInRoom.forEach(async (socketId) => {
+                        for (const socketId of usersInRoom) {
                             const userSocket = io.sockets.sockets.get(socketId); // Get the socket instance
                             if (userSocket && userSocket.user && userSocket.user.id) {
                                 const { id, name, gender, rating, pic } = userSocket.user;
@@ -580,13 +573,13 @@ let randomConnect = (io) => {
                                         coins: db.Sequelize.literal(`coins-10`)
                                     }, {
                                         where: {
-                                            id: userSocket.user.id
+                                            id: userSocket.user.id,
+                                            coins: { [Op.gte]: 10 }
                                         }
                                     })
                                 }
                             }
-
-                        });
+                        }
                         console.log("The room with id: ", socket.randomRoomId, " gets filled with users : ", users);
                         io.to(socket.randomRoomId).emit('strangers-connected', { success: true, message: "Connected to Stranger", users, roomId: socket.randomRoomId });
 
@@ -706,7 +699,7 @@ let randomConnect = (io) => {
             // });
             socket.on('send-request-accept-later', (friendId) => {
                 // Find the socket ID of the friend
-                const friendSocketIds = onlineUsers[friendId];
+                const friendSocketIds = onlineUsers[friendId] || [];
                 console.log("reached to send-request-accept-friend", friendSocketIds);
 
                 for(let friendSocketId of friendSocketIds){
@@ -734,17 +727,17 @@ let randomConnect = (io) => {
             // getOnlineUsers(io);
 
 
-            socket.on('disconnect', async () => {
+            socket.on('disconnect', socketWrapper(async () => {
                 console.log("The user disconnected");
                 socket.hasPreference = false;
-                let onlineCount = await db.User.findOne({
+                const onlineCount = await db.User.findOne({
                     attributes: ['Online'],
                     where: {
                         id: socket.user.id
                     }
                 });
-                if (onlineCount.Online > 0) {
-                    db.User.update(
+                if (onlineCount?.Online > 0) {
+                    await db.User.update(
                         {
                             Online: onlineCount.Online - 1,
                         },
@@ -754,10 +747,12 @@ let randomConnect = (io) => {
                             },
                         }
                     );
-                    
+
+                    if (onlineCount.Online === 1) io.emit('offline', socket.user.id);
                 }
-                if (onlineCount.Online == 1) io.emit('offline', socket.user.id);
-                io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
+                if (socket.randomRoomId) {
+                    io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
+                }
                 if (socket.user?.id && onlineUsers[socket.user.id]?.length) {
                     console.log("gonna remove the socket.user.id: ------------------------------", socket.user.id);
                     onlineUsers[socket.user.id] = onlineUsers[socket.user.id].filter(id => id !== socket.id);
@@ -772,7 +767,7 @@ let randomConnect = (io) => {
                 await adminPortal.triggerEvent("random-rooms", rcUsers.singleRooms(rcUsers.root, io, 0));
                 await adminPortal.triggerEvent("top-waiting-users");
 
-            })
+            }, socket));
         });
 
     } catch (error) {

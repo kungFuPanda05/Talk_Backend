@@ -35,7 +35,7 @@ let controller = async (req, res, next) => {
                 to: req.user.id,
             });
         }else{
-            friendRequest.update({status});
+            await friendRequest.update({status});
         }
 
         if (status === "accepted") {
@@ -50,8 +50,8 @@ let controller = async (req, res, next) => {
                 chatId: chat.id,
                 userId: strangerId
             });
-            const userSocketIds = onlineUsers[req.user.id];
-            const strangerSocketIds = onlineUsers[strangerId];
+            const userSocketIds = onlineUsers[req.user.id] || [];
+            const strangerSocketIds = onlineUsers[strangerId] || [];
             for (let userSocketId of userSocketIds) {
                 for (let strangerSocketId of strangerSocketIds) {
                     // Add the users' sockets to the chat room
@@ -81,4 +81,3 @@ let controller = async (req, res, next) => {
 const apiRouter = express.Router();
 apiRouter.route('/').post(validateBody(validator), jwtStrategy, controller);
 export default apiRouter;
-

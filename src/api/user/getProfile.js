@@ -4,26 +4,32 @@ import db from '../../../models';
 import { Op } from 'sequelize';
 
 let controller = async (req, res, next) => {
-    let profile = await db.User.findOne({
-        attributes: ['id', 'name', 'email', 'coins', 'gender', 'pic'],
-        where: {
-            id: req.user.id
-        },
-        raw: true
-    })
-    let friendsCount = await db.Friend_Request.count({
-        where: {
-            status: "accepted",
-            [Op.or]: [
-                { from: req.user.id },
-                { to: req.user.id }
-            ]
-        },
-        distinct: true,
-        col: 'id'
-    });
-    profile.friendsCount = friendsCount;
     try {
+        const profile = await db.User.findOne({
+            attributes: ['id', 'name', 'email', 'coins', 'gender', 'pic', 'isGuest'],
+            where: {
+                id: req.user.id
+            },
+            raw: true
+        });
+
+        if (!profile) throw new RequestError('User not found', 404);
+
+        profile.isGuest = Boolean(profile.isGuest);
+        if (profile.isGuest) profile.email = null;
+
+        profile.friendsCount = await db.Friend_Request.count({
+            where: {
+                status: "accepted",
+                [Op.or]: [
+                    { from: req.user.id },
+                    { to: req.user.id }
+                ]
+            },
+            distinct: true,
+            col: 'id'
+        });
+
         res.status(200).json({
             success: true,
             profile
@@ -31,9 +37,8 @@ let controller = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
 
 const apiRouter = express.Router();
 apiRouter.route('/').get(jwtStrategy, controller);
 export default apiRouter;
-

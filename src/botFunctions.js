@@ -5,7 +5,6 @@ import { chatContexts } from "./randomConnLogic";
 import { disconnectKeys, replies, validLabels, MTM, MTF, FTF, FTM } from "./botUtils";
 import { v4 as uuidv4 } from 'uuid';
 // import { pipeline } from '@xenova/transformers';
-const { loadClassifier } = require('./xenovawrapper');
 
 
 let matchedReply = (input, selfGender, strangerGender) => {
@@ -251,25 +250,6 @@ export default {
             }
         } catch (error) {
             console.log("An error occurred while sending bot messages:", error);
-        }
-    },
-    async classifyMessage(message) {
-        try {
-            const classifier = await loadClassifier();
-    
-            let result = await classifier(message, validLabels);
-            let label = result.labels[0];
-
-            // If the label is not valid, retry once
-            if (!validLabels.includes(label)) {
-                result = await classifier(message, validLabels);
-                label = result.labels[0];
-            }
-
-            return validLabels.includes(label) ? label : "convo";
-        } catch (error) {
-            console.log("\x1b[31mError occurred while labelling the message:\x1b[0m", error);
-            return "convo";
         }
     },
     async labelMessage(message) {
