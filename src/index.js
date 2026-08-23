@@ -1,35 +1,25 @@
+import 'dotenv/config';
 import express from 'express';
 import passport from 'passport';
 import { restRouter } from "./api";
 import cors from 'cors';
+import './errors';
 import './passport';
 import db from '../models';
 import randomConnect from './randomConnLogic';
 import socketStrategy from './strategy/auth/socketauth';
 import expressSanitizer from 'express-sanitizer'
-import './errors'
 import { sanitize } from './middleware/sanitizer';
-import dotenv from 'dotenv';
 import compression from 'compression';
 import helmet from 'helmet';
-import path from 'path';
-import { redisClient } from './redis';
-import adminPortal from './adminPortal';
-// import './worker'
+import { expressCorsOptions, socketCorsOptions } from './corsOrigins';
+import { redisEnabled } from './redis';
+import { uploadRoot } from './uploadStorage';
 
-
-dotenv.config();
 const app = express();
 
-app.options('*', cors()); // Enable CORS preflight for all routes
-app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL || "http://localhost:3000",
-        process.env.ADMIN_FRONTEND_URL || "http://localhost:3001"
-    ]
-}));
-
-
+app.options('*', cors(expressCorsOptions));
+app.use(cors(expressCorsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -38,10 +28,12 @@ app.use(helmet());
 
 app.use(passport.initialize());
 app.use(expressSanitizer());
-app.use('/uploads', express.static(path.join(__dirname, 'public'), {
-    setHeaders: (res, path) => {
-        res.set('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
-        // res.set('Access-Control-Allow-Credentials', 'true');
+app.use('/uploads', express.static(uploadRoot, {
+    setHeaders: (res) => {
+        // Uploaded images are public chat assets. These headers allow the deployed
+        // frontend (and its image optimizer) to render them across origins.
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     }
 }));
 
@@ -49,6 +41,21 @@ app.use('/uploads', express.static(path.join(__dirname, 'public'), {
 app.use((req, res, next) => {
     console.log(`\x1b[31m${req.method}\x1b[0m \x1b[32m${req.url}\x1b[0m`);
     next();
+});
+
+app.get('/health', async (req, res) => {
+    try {
+        await db.sequelize.authenticate();
+        res.status(200).json({
+            status: 'ok',
+            database: 'ready',
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'unavailable',
+            database: 'not_ready',
+        });
+    }
 });
 
 app.use('/api', sanitize(), restRouter);
@@ -74,29 +81,29 @@ db.sequelize.authenticate()
         console.log(err, "Something went wrong with the Database!");
     })
 
-const PORT = process.env.APP_PORT || 4000;
+const PORT = process.env.PORT || process.env.APP_PORT || 4000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`The app is running on port ${PORT}`);
     db.User.update(
         { Online: 0 },  // Update value
         { where: {} }   // No conditions, update all users
-    );
+    ).catch((error) => {
+        console.error('Unable to reset user presence during startup:', error.message);
+    });
 });
 
 
 const io = require('socket.io')(server, {
     pingTimeout: 60000,
-    cors: {
-        origin: [
-            process.env.FRONTEND_URL || "http://localhost:3000",
-            process.env.ADMIN_FRONTEND_URL || "http://localhost:4000"
-        ],
-    },
+    cors: socketCorsOptions,
 });
 
-
-require("./worker");
+if (redisEnabled) {
+    require('./worker');
+} else {
+    console.log('Redis-backed bot and chat-context queues are disabled');
+}
 
 io.use(socketStrategy);
 randomConnect(io);

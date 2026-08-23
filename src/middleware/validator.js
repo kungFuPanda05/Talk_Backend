@@ -8,8 +8,6 @@ export let validateBody = (schema) => {
 				...req.params   // Merge req.params
 			};
 
-			console.log(dataToValidate); // Log the combined data for validation
-
 			// Validate the combined data
 			const result = schema.validate(dataToValidate);
 

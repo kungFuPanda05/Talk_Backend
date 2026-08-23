@@ -3,25 +3,18 @@
 
 import express from 'express';
 import jwtStrategy from '../../strategy/auth/jwtauth';
-import db from '../../../models';
-import { Op } from 'sequelize';
-import Joi from 'joi';
-import { validateBody } from '../../middleware/validator';
-import { logoUpload, sendImageUpload } from '../../middleware/multer-config';
+import { uploadSendImage, validateUploadedImage } from '../../middleware/multer-config';
 import { createMessage } from '../../service';
 import io from '../..';
 import { onlineUsers } from '../../randomConnLogic';
-
-const validator = Joi.object({
-    chatId: Joi.number().integer().required(), 
-    // sendImages: Joi.string().required()
-});
-
 
 let controller = async (req, res, next)=>{
     try{ 
         let {chatId=0} = req.params;
         chatId = parseInt(chatId, 10);
+        if (!Number.isSafeInteger(chatId) || chatId < 1) {
+            throw new RequestError('Invalid chat id', 400);
+        }
         let {identityKey} = req.query;
         const pic = req.file? `uploads/sendImages/${req.file.filename}` : null;
         if(!pic) throw new RequestError("No Image found", 400);
@@ -41,6 +34,5 @@ let controller = async (req, res, next)=>{
     }
 }
 const apiRouter = express.Router();
-apiRouter.route('/:chatId').post(sendImageUpload.single('sendImage'), /*validateBody(validator),*/ jwtStrategy, controller);
+apiRouter.route('/:chatId').post(jwtStrategy, uploadSendImage, validateUploadedImage, controller);
 export default apiRouter;
-

@@ -1,9 +1,14 @@
 {
   "scripts": {
-    "start": "nodemon src/index.js --exec babel-node --presets @babel/env",
+    "dev": "nodemon src/index.js --exec babel-node --presets @babel/env",
+    "start": "node dist/src/index.js",
     "login-all-users": "nodemon script/loginAllUsers.js --exec babel-node --presets @babel/env",
-    "build": "babel src --out-dir dist --copy-files",
-    "start:prod": "node dist/index.js"
+    "build": "babel src --out-dir dist/src --copy-files --config-file ./src/.babelrc && babel models --out-dir dist/models --copy-files --config-file ./src/.babelrc && babel config --out-dir dist/config --copy-files --config-file ./src/.babelrc",
+    "start:prod": "node dist/src/index.js",
+    "db:bootstrap": "node scripts/bootstrap-production.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "nodemonConfig": {
     "ignore": [

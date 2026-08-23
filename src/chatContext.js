@@ -1,5 +1,4 @@
-import { Queue } from "bullmq";
-import { redisClient } from "./redis";
+import { redisClient, redisEnabled } from "./redis";
 import addJobAndWait from "./initQueue";
 
 // const trieQueue = new Queue("trieQueue", { connection: redisClient });
@@ -24,12 +23,16 @@ function getReplyFromTrie(trie, hashedContext) {
 
 class ChatTrie {
   async storeReply(hashedContext, response) {
+    if (!redisEnabled || !redisClient) return false;
+
     // await trieQueue.add("store", { hashedContext, response });
-    addJobAndWait("trieQueue", { hashedContext, response });
+    return addJobAndWait("trieQueue", { hashedContext, response });
   }
 
   // Retrieve a reply by loading the trie from Redis and performing a lookup.
   async getReply(hashedContext) {
+    if (!redisEnabled || !redisClient) return null;
+
     const trieStr = await redisClient.get("chatTrie");
     if (!trieStr) {
       return null;

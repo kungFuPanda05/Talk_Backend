@@ -1,6 +1,6 @@
 import express from 'express';
 import db from '../../../models'
-import { logoUpload } from '../../middleware/multer-config';
+import { uploadLogo, validateUploadedImage } from '../../middleware/multer-config';
 import { validateBody } from '../../middleware/validator';
 import Joi from 'joi';
 import dbFunctions from '../../dbFunctions';
@@ -33,6 +33,6 @@ let controller = async (req, res, next)=>{
     }
 }
 
-apiRouter.route('/').post(logoUpload.single('logo'), validateBody(validator), controller); //multer should be before validateBody because it populates the req.body and if it is written after validatebody then the validator won't have any data in req.body and it will throw the error
+apiRouter.route('/').post(uploadLogo, validateUploadedImage, validateBody(validator), controller); //multer should be before validateBody because it populates the req.body and if it is written after validatebody then the validator won't have any data in req.body and it will throw the error
 
 export default apiRouter;

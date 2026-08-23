@@ -1,9 +1,6 @@
-import { QueueEvents, Worker } from "bullmq";
+import { Worker } from "bullmq";
 import fs from "fs";
-import { redisClient } from "./redis";
-import { chatContexts } from "./randomConnLogic";
-import botFunctions from "./botFunctions";
-import ChatTrie from "./chatContext";
+import { redisClient, redisEnabled } from "./redis";
 // const redisClient = new Redis({
 //     maxRetriesPerRequest: null,
 //     retryStrategy: (times) => {
@@ -39,7 +36,7 @@ function updateTrie(trie, hashedContext, response) {
   return trie;
 }
 
-const trieQueueWorker = new Worker(
+export const trieQueueWorker = redisEnabled && redisClient ? new Worker(
   "trieQueue",
   async (job) => {
     const { hashedContext, response } = job.data;
@@ -64,4 +61,4 @@ const trieQueueWorker = new Worker(
     console.log(`Updated trie for context: ${hashedContext}`);
   },
   { connection: redisClient }
-);
+) : null;

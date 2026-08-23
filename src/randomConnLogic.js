@@ -8,9 +8,6 @@ import JWT from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import botFunctions, { gptPayloadObj } from './botFunctions.js';
 import ChatTrie from './chatContext';
-import redis, { redisClient } from './redis';
-import { Queue } from 'bullmq';
-import addJobAndWait from './initQueue';
 import { botInitialMessages, lastMessageReceivedTimeByBot } from './botUtils';
 import { socketWrapper } from './socketUtils';
 import { weightedRandomChoice } from './functions';
@@ -512,11 +509,11 @@ let randomConnect = (io) => {
             socket.on('join-room', socketWrapper(async ({ gwant, miRating = 0, maRating = 5 }) => {
                 console.log("\x1b[31m%s\x1b[0m", "reaching to join room");
                 try {
+                    socket.hasPreference = gwant === "M" || gwant === "F";
                     if (miRating < 0 || maRating > 5 || miRating > maRating) throw new RequestError("Invalid preferred rating range", 400);
                     console.log("Request received for assigning to random room, ghave: ", socket.user.gender, "selfRating: ", socket.user.rating, " gwant: ", gwant, " miRating: ", miRating, " maRating: ", maRating);
                     let randomRoomId;
-                    if (gwant === "M" || gwant === 'F') {
-                        socket.hasPreference = true;
+                    if (socket.hasPreference) {
                         let user = await db.User.findOne({
                             attributes: ['id', 'coins'],
                             where: {
@@ -576,7 +573,8 @@ let randomConnect = (io) => {
                         usersInRoom.forEach(async (socketId) => {
                             const userSocket = io.sockets.sockets.get(socketId); // Get the socket instance
                             if (userSocket && userSocket.user && userSocket.user.id) {
-                                users.push(userSocket.user); // Access socket.user.id and store it
+                                const { id, name, gender, rating, pic } = userSocket.user;
+                                users.push({ id, name, gender, rating, pic });
                                 if (userSocket.hasPreference) {
                                     await db.User.update({
                                         coins: db.Sequelize.literal(`coins-10`)
@@ -609,6 +607,7 @@ let randomConnect = (io) => {
             }, socket));
             socket.on('leave-room', socketWrapper(async() => {
                 socket.leave(socket.randomRoomId);
+                socket.hasPreference = false;
                 if (socket.randomRoomId && chatContexts[socket.randomRoomId]) delete chatContexts[socket.randomRoomId];
                 console.log("Clearing chat context for room: ", socket.randomRoomId);
                 io.to(socket.randomRoomId).emit('user-left', "Stranger left the chat");
@@ -737,6 +736,7 @@ let randomConnect = (io) => {
 
             socket.on('disconnect', async () => {
                 console.log("The user disconnected");
+                socket.hasPreference = false;
                 let onlineCount = await db.User.findOne({
                     attributes: ['Online'],
                     where: {

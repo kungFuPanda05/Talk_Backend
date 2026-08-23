@@ -1,21 +1,46 @@
+import 'dotenv/config';
 import Redis from "ioredis";
 
-// Initialize Redis client
-export const redisClient = new Redis({
-  host: "127.0.0.1", // Adjust if needed
-  port: 6379,
+const isEnabled = (value) => String(value).toLowerCase() === 'true';
+
+export const redisEnabled = isEnabled(process.env.REDIS_ENABLED)
+  || isEnabled(process.env.CONNECT_BOT)
+  || isEnabled(process.env.CHAT_CONTEXT_TRIE_UPDATE);
+
+const redisPort = Number.parseInt(process.env.REDIS_PORT || '6379', 10);
+const commonRedisOptions = {
   maxRetriesPerRequest: null,
-  retryStrategy: (times) => Math.min(times * 100, 3000), // Exponential backoff
-});
+  retryStrategy: (times) => Math.min(times * 100, 3000),
+};
 
-// Event listeners for error handling
-redisClient.on("error", (err) => {
-  console.error("❌ Redis connection error:", err);
-});
+const createRedisClient = () => {
+  if (!redisEnabled) return null;
 
-redisClient.ping()
-  .then(() => console.log("✅ Redis connected successfully"))
-  .catch((err) => console.error("❌ Error connecting to Redis:", err));
+  if (process.env.REDIS_URL) {
+    return new Redis(process.env.REDIS_URL, commonRedisOptions);
+  }
+
+  return new Redis({
+    ...commonRedisOptions,
+    host: process.env.REDIS_HOST || '127.0.0.1',
+    port: Number.isFinite(redisPort) ? redisPort : 6379,
+    username: process.env.REDIS_USERNAME || undefined,
+    password: process.env.REDIS_PASSWORD || undefined,
+    tls: isEnabled(process.env.REDIS_TLS) ? {} : undefined,
+  });
+};
+
+export const redisClient = createRedisClient();
+
+if (redisClient) {
+  redisClient.on("error", (err) => {
+    console.error("Redis connection error:", err.message);
+  });
+
+  redisClient.ping()
+    .then(() => console.log("Redis connected successfully"))
+    .catch((err) => console.error("Unable to connect to Redis:", err.message));
+}
 
 // ────────────────────────────────────────────────────────────────────────────────
 // 🔹 Utility Functions for Redis
@@ -23,6 +48,8 @@ redisClient.ping()
 
 // ✅ Set data in Redis with optional expiration
 export const setData = async (key, value, expiry = 24*60*60) => {
+  if (!redisClient) return false;
+
   try {
     const stringValue = typeof value === "object" ? JSON.stringify(value) : value;
     if (expiry) {
@@ -39,6 +66,8 @@ export const setData = async (key, value, expiry = 24*60*60) => {
 
 // ✅ Get data from Redis
 export const getData = async (key) => {
+  if (!redisClient) return null;
+
   try {
     const data = await redisClient.get(key);
     return data ? JSON.parse(data) : null;
@@ -50,6 +79,8 @@ export const getData = async (key) => {
 
 // ✅ Delete a key from Redis
 export const deleteKey = async (key) => {
+  if (!redisClient) return false;
+
   try {
     const result = await redisClient.del(key);
     return result > 0;
@@ -61,6 +92,8 @@ export const deleteKey = async (key) => {
 
 // ✅ Check if a key exists in Redis
 export const isKeyExists = async (key) => {
+  if (!redisClient) return false;
+
   try {
     const result = await redisClient.exists(key);
     return result === 1;
@@ -72,6 +105,8 @@ export const isKeyExists = async (key) => {
 
 // ✅ Get all keys matching a pattern
 export const getKeys = async (pattern = "*") => {
+  if (!redisClient) return [];
+
   try {
     return await redisClient.keys(pattern);
   } catch (error) {
@@ -82,6 +117,8 @@ export const getKeys = async (pattern = "*") => {
 
 // ✅ Flush all keys (Use with caution!)
 export const flushAll = async () => {
+  if (!redisClient) return false;
+
   try {
     await redisClient.flushall();
     console.warn("⚠️ Redis database flushed!");
@@ -100,6 +137,11 @@ export const wrapper = async(key, cb, ttl) => {
   }
   return data;
 }
+
+export const closeRedis = async () => {
+  if (!redisClient || redisClient.status === 'end') return;
+  await redisClient.quit();
+};
 
 // Export all functions
 export default {

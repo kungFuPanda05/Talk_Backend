@@ -3,13 +3,12 @@
     [
       "@babel/preset-env",
       {
-        "modules": false
+        "targets": {
+          "node": "18"
+        },
+        "modules": "commonjs"
       }
     ]
-  ],
-  "plugins": [
-    "@babel/plugin-transform-runtime",
-    "@babel/plugin-syntax-dynamic-import"
   ],
   "ignore": [
     "node_modules",

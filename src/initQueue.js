@@ -1,20 +1,28 @@
 import { Queue, QueueEvents } from "bullmq";
+import { redisClient, redisEnabled } from './redis';
 
-const connection = { host: "127.0.0.1", port: 6379 };
+const queueMap = {};
 const queueEventsMap = {};
 
 function getQueue(queueName) {
-    return new Queue(queueName, { connection });
+    if (!queueMap[queueName]) {
+        queueMap[queueName] = new Queue(queueName, { connection: redisClient });
+    }
+    return queueMap[queueName];
 }
 
 function getQueueEvents(queueName) {
     if (!queueEventsMap[queueName]) {
-        queueEventsMap[queueName] = new QueueEvents(queueName, { connection });
+        queueEventsMap[queueName] = new QueueEvents(queueName, { connection: redisClient });
     }
     return queueEventsMap[queueName];
 }
 
 async function addJobAndWait(queueName, jobData, priority = 1) {
+    if (!redisEnabled || !redisClient) {
+        throw new Error('Redis-backed queues are disabled');
+    }
+
     const queue = getQueue(queueName);
     const queueEvents = getQueueEvents(queueName);
 
